@@ -1,7 +1,6 @@
 import {
   SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-  type SlashCommandOptionsOnlyBuilder
+  type ChatInputCommandInteraction
 } from "discord.js";
 import {
   blockService,
@@ -41,7 +40,7 @@ function createBlockRpCommand(): SlashCommandDefinition {
           .setRequired(false)
       ),
     async execute(interaction) {
-      const guildId = requireGuildId(interaction);
+      const guildId = await requireGuildId(interaction);
 
       if (!guildId) {
         return;
@@ -75,7 +74,7 @@ function createUnblockRpCommand(): SlashCommandDefinition {
           .setRequired(false)
       ),
     async execute(interaction) {
-      const guildId = requireGuildId(interaction);
+      const guildId = await requireGuildId(interaction);
 
       if (!guildId) {
         return;
@@ -98,20 +97,30 @@ function createBlockCategoryCommand(): SlashCommandDefinition {
   return {
     name: "bloquearcategoria",
     description: "Bloqueia ou libera uma categoria de RP recebida.",
-    data: addCategoryChoices(
-      new SlashCommandBuilder()
-        .setName("bloquearcategoria")
-        .setDescription("Bloqueia ou libera uma categoria de RP recebida.")
-        .setDMPermission(false)
-        .addBooleanOption((option) =>
-          option
-            .setName(BLOCK_OPTION_NAME)
-            .setDescription("Use false para liberar a categoria.")
-            .setRequired(false)
-        )
-    ),
+    data: new SlashCommandBuilder()
+      .setName("bloquearcategoria")
+      .setDescription("Bloqueia ou libera uma categoria de RP recebida.")
+      .setDMPermission(false)
+      .addStringOption((option) =>
+        option
+          .setName(CATEGORY_OPTION_NAME)
+          .setDescription("Categoria de RP.")
+          .setRequired(true)
+          .addChoices(
+            { name: "Carinho fofo", value: "carinho_fofo" },
+            { name: "Romance leve", value: "romance_leve" },
+            { name: "Apoio emocional", value: "apoio_emocional" },
+            { name: "Brincadeira", value: "brincadeira" }
+          )
+      )
+      .addBooleanOption((option) =>
+        option
+          .setName(BLOCK_OPTION_NAME)
+          .setDescription("Use false para liberar a categoria.")
+          .setRequired(false)
+      ),
     async execute(interaction) {
-      const guildId = requireGuildId(interaction);
+      const guildId = await requireGuildId(interaction);
 
       if (!guildId) {
         return;
@@ -158,7 +167,7 @@ function createPreferencesCommand(): SlashCommandDefinition {
           .setRequired(false)
       ),
     async execute(interaction) {
-      const guildId = requireGuildId(interaction);
+      const guildId = await requireGuildId(interaction);
 
       if (!guildId) {
         return;
@@ -220,29 +229,15 @@ function createOptInCommand(): SlashCommandDefinition {
   };
 }
 
-function addCategoryChoices(builder: SlashCommandOptionsOnlyBuilder): SlashCommandOptionsOnlyBuilder {
-  return builder.addStringOption((option) =>
-    option
-      .setName(CATEGORY_OPTION_NAME)
-      .setDescription("Categoria de RP.")
-      .setRequired(true)
-      .addChoices(
-        { name: "Carinho fofo", value: "carinho_fofo" },
-        { name: "Romance leve", value: "romance_leve" },
-        { name: "Apoio emocional", value: "apoio_emocional" },
-        { name: "Brincadeira", value: "brincadeira" }
-      )
-  );
-}
-
-function requireGuildId(interaction: ChatInputCommandInteraction): string | null {
+async function requireGuildId(interaction: ChatInputCommandInteraction): Promise<string | null> {
   if (interaction.guildId) {
     return interaction.guildId;
   }
 
-  void interaction.reply({
+  await interaction.reply({
     content: "Use este comando em um servidor.",
     ephemeral: true
   });
+
   return null;
 }

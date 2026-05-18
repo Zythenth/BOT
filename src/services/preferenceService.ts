@@ -26,7 +26,7 @@ export const preferenceService = {
   },
 
   async update(input: UpdateUserPreferencesInput): Promise<UserPreferenceView> {
-    const current = await this.getOrCreate(input.userId);
+    const current = await preferenceService.getOrCreate(input.userId);
 
     return toView(
       await userPreferenceRepository.upsert({
@@ -40,7 +40,7 @@ export const preferenceService = {
   },
 
   async optOut(userId: string): Promise<UserPreferenceView> {
-    const current = await this.getOrCreate(userId);
+    const current = await preferenceService.getOrCreate(userId);
 
     return toView(
       await userPreferenceRepository.upsert({
@@ -54,7 +54,7 @@ export const preferenceService = {
   },
 
   async optIn(userId: string): Promise<UserPreferenceView> {
-    const current = await this.getOrCreate(userId);
+    const current = await preferenceService.getOrCreate(userId);
 
     return toView(
       await userPreferenceRepository.upsert({
