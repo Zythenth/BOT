@@ -7,4 +7,192 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Detailed models will be added in a later stage.
+model Guild {
+  id        String   @id
+  prefix    String   @default("-")
+  isAllowed Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  affinityPairs          AffinityPair[]
+  interactions           Interaction[]
+  gifs                   Gif[]
+  phrases                Phrase[]
+  aliases                Alias[]
+  blocks                 Block[]
+  adminLogs              AdminLog[]
+  buttonInteractionStates ButtonInteractionState[]
+}
+
+model UserPreference {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  locale           String   @default("pt-BR")
+  allowRomance     Boolean  @default(false)
+  hideFromRankings Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model AffinityPair {
+  id                String    @id @default(cuid())
+  guildId           String
+  // userAId and userBId must be stored in normalized order by the future service layer.
+  userAId           String
+  userBId           String
+  points            Int       @default(0)
+  interactionCount  Int       @default(0)
+  lastInteractionAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  guild        Guild         @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  interactions Interaction[]
+
+  @@unique([guildId, userAId, userBId])
+  @@index([guildId])
+  @@index([guildId, userAId])
+  @@index([guildId, userBId])
+}
+
+model Interaction {
+  id             String   @id @default(cuid())
+  guildId        String
+  actorUserId    String
+  targetUserId   String
+  action         String
+  category       String
+  source         String
+  pointsAwarded  Int      @default(0)
+  affinityPairId String?
+  gifId          String?
+  createdAt      DateTime @default(now())
+
+  guild        Guild         @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  affinityPair AffinityPair? @relation(fields: [affinityPairId], references: [id], onDelete: SetNull)
+  gif          Gif?          @relation(fields: [gifId], references: [id], onDelete: SetNull)
+
+  @@index([guildId, createdAt])
+  @@index([guildId, actorUserId])
+  @@index([guildId, targetUserId])
+  @@index([guildId, action])
+}
+
+model Gif {
+  id            String    @id @default(cuid())
+  guildId       String
+  provider      String    @default("giphy")
+  providerGifId String
+  action        String
+  category      String
+  // Allowed values: pending, approved, blocked, disabled, uncategorized.
+  status        String    @default("pending")
+  rating        String    @default("pg")
+  searchTerm    String?
+  giphyPageUrl  String?
+  timesUsed     Int       @default(0)
+  lastUsedAt    DateTime?
+  addedBy       String?
+  approvedBy    String?
+  blockedBy     String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  guild        Guild         @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  interactions Interaction[]
+
+  @@unique([provider, providerGifId])
+  @@index([guildId])
+  @@index([guildId, action, category])
+  @@index([guildId, status])
+}
+
+model Phrase {
+  id        String   @id @default(cuid())
+  guildId   String
+  action    String
+  category  String
+  text      String
+  isDefault Boolean  @default(false)
+  isEnabled Boolean  @default(true)
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, action, category])
+  @@index([guildId, isEnabled])
+}
+
+model Alias {
+  id          String   @id @default(cuid())
+  guildId     String
+  commandName String
+  alias       String
+  isEnabled   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, alias])
+  @@index([guildId, commandName])
+}
+
+model Block {
+  id            String   @id @default(cuid())
+  guildId       String
+  blockerUserId String
+  blockedUserId String?
+  category      String?
+  action        String?
+  reason        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, blockerUserId])
+  @@index([guildId, blockedUserId])
+  @@index([guildId, category])
+}
+
+model AdminLog {
+  id         String   @id @default(cuid())
+  guildId    String
+  actorUserId String
+  action     String
+  targetType String?
+  targetId   String?
+  details    String?
+  createdAt  DateTime @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, createdAt])
+  @@index([guildId, actorUserId])
+  @@index([guildId, action])
+}
+
+model ButtonInteractionState {
+  id               String    @id @default(cuid())
+  guildId          String
+  customId         String    @unique
+  action           String
+  originalAuthorId String
+  originalTargetId String
+  expiresAt        DateTime
+  usedAt           DateTime?
+  details          String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, action])
+  @@index([expiresAt])
+}

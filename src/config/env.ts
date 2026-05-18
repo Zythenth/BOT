@@ -1,14 +1,12 @@
 import dotenv from "dotenv";
 import { DEFAULT_PREFIX } from "./constants";
 
-if (process.env.DOTENV_CONFIG_PATH) {
-  dotenv.config({ path: process.env.DOTENV_CONFIG_PATH });
-} else {
-  dotenv.config();
-}
+export type AppEnvironment = "development" | "test" | "production";
+export type GifProvider = "giphy";
+export type GiphyRating = "g" | "pg" | "pg-13" | "r";
 
 export interface AppConfig {
-  environment: string;
+  environment: AppEnvironment;
   discord: {
     token: string;
     clientId: string;
@@ -17,10 +15,10 @@ export interface AppConfig {
   databaseUrl: string;
   defaultPrefix: string;
   gifs: {
-    provider: string;
+    provider: GifProvider;
     giphyApiKey?: string;
     requestsPerHour: number;
-    rating: string;
+    rating: GiphyRating;
     lang: string;
     dbMinRatio: number;
     dbMaxRatio: number;
@@ -32,29 +30,37 @@ export interface AppConfig {
 }
 
 export function loadConfig(): AppConfig {
-  return {
-    environment: process.env.NODE_ENV ?? "development",
+  loadDotEnv();
+
+  const reader = createEnvReader(process.env);
+  const config: AppConfig = {
+    environment: reader.enumValue("NODE_ENV", ["development", "test", "production"], "development"),
     discord: {
-      token: readString("DISCORD_TOKEN"),
-      clientId: readString("DISCORD_CLIENT_ID"),
-      devGuildId: readOptionalString("DISCORD_DEV_GUILD_ID")
+      token: reader.requiredString("DISCORD_TOKEN"),
+      clientId: reader.requiredString("DISCORD_CLIENT_ID"),
+      devGuildId: reader.optionalString("DISCORD_DEV_GUILD_ID")
     },
-    databaseUrl: readString("DATABASE_URL", "file:./dev.db"),
-    defaultPrefix: readString("DEFAULT_PREFIX", DEFAULT_PREFIX),
+    databaseUrl: reader.requiredString("DATABASE_URL"),
+    defaultPrefix: reader.string("DEFAULT_PREFIX", DEFAULT_PREFIX),
     gifs: {
-      provider: readString("GIF_PROVIDER", "giphy"),
-      giphyApiKey: readOptionalString("GIPHY_API_KEY"),
-      requestsPerHour: readNumber("GIPHY_REQUESTS_PER_HOUR", 100),
-      rating: readString("GIPHY_RATING", "pg"),
-      lang: readString("GIPHY_LANG", "pt"),
-      dbMinRatio: readNumber("GIF_DB_MIN_RATIO", 0.65),
-      dbMaxRatio: readNumber("GIF_DB_MAX_RATIO", 0.85),
-      externalMinRatio: readNumber("GIF_GIPHY_MIN_RATIO", 0.15),
-      externalMaxRatio: readNumber("GIF_GIPHY_MAX_RATIO", 0.35),
-      allowNsfw: readBoolean("ALLOW_NSFW", false),
-      allowUncategorized: readBoolean("ALLOW_UNCATEGORIZED_GIFS", true)
+      provider: reader.enumValue("GIF_PROVIDER", ["giphy"], "giphy"),
+      giphyApiKey: reader.optionalString("GIPHY_API_KEY"),
+      requestsPerHour: reader.integer("GIPHY_REQUESTS_PER_HOUR", 100, { min: 1 }),
+      rating: reader.enumValue("GIPHY_RATING", ["g", "pg", "pg-13", "r"], "pg"),
+      lang: reader.string("GIPHY_LANG", "pt"),
+      dbMinRatio: reader.number("GIF_DB_MIN_RATIO", 0.65, { min: 0, max: 1 }),
+      dbMaxRatio: reader.number("GIF_DB_MAX_RATIO", 0.85, { min: 0, max: 1 }),
+      externalMinRatio: reader.number("GIF_GIPHY_MIN_RATIO", 0.15, { min: 0, max: 1 }),
+      externalMaxRatio: reader.number("GIF_GIPHY_MAX_RATIO", 0.35, { min: 0, max: 1 }),
+      allowNsfw: reader.boolean("ALLOW_NSFW", false),
+      allowUncategorized: reader.boolean("ALLOW_UNCATEGORIZED_GIFS", true)
     }
   };
+
+  validateConfigRelationships(config, reader.errors);
+  reader.throwIfInvalid();
+
+  return config;
 }
 
 export function assertRuntimeConfig(config: AppConfig): void {
@@ -77,32 +83,133 @@ export function assertRuntimeConfig(config: AppConfig): void {
   }
 }
 
-function readString(name: string, fallback = ""): string {
-  return process.env[name]?.trim() || fallback;
-}
-
-function readOptionalString(name: string): string | undefined {
-  const value = process.env[name]?.trim();
-  return value || undefined;
-}
-
-function readNumber(name: string, fallback: number): number {
-  const value = process.env[name];
-
-  if (!value) {
-    return fallback;
+function loadDotEnv(): void {
+  if (process.env.DOTENV_CONFIG_PATH) {
+    dotenv.config({ path: process.env.DOTENV_CONFIG_PATH });
+    return;
   }
 
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
+  dotenv.config();
 }
 
-function readBoolean(name: string, fallback: boolean): boolean {
-  const value = process.env[name]?.trim().toLowerCase();
-
-  if (!value) {
-    return fallback;
+function validateConfigRelationships(config: AppConfig, errors: string[]): void {
+  if (config.gifs.dbMinRatio > config.gifs.dbMaxRatio) {
+    errors.push("GIF_DB_MIN_RATIO cannot be greater than GIF_DB_MAX_RATIO.");
   }
 
-  return ["1", "true", "yes", "y", "on"].includes(value);
+  if (config.gifs.externalMinRatio > config.gifs.externalMaxRatio) {
+    errors.push("GIF_GIPHY_MIN_RATIO cannot be greater than GIF_GIPHY_MAX_RATIO.");
+  }
+}
+
+function createEnvReader(source: NodeJS.ProcessEnv) {
+  const errors: string[] = [];
+
+  function read(name: string): string | undefined {
+    const value = source[name]?.trim();
+    return value ? value : undefined;
+  }
+
+  function validateRange(name: string, value: number, options?: NumberOptions): void {
+    if (options?.min !== undefined && value < options.min) {
+      errors.push(`${name} must be greater than or equal to ${options.min}.`);
+    }
+
+    if (options?.max !== undefined && value > options.max) {
+      errors.push(`${name} must be less than or equal to ${options.max}.`);
+    }
+  }
+
+  function parseNumber(name: string, fallback: number, options?: NumberOptions): number {
+    const rawValue = read(name);
+
+    if (!rawValue) {
+      validateRange(name, fallback, options);
+      return fallback;
+    }
+
+    const value = Number(rawValue);
+
+    if (!Number.isFinite(value)) {
+      errors.push(`${name} must be a valid number.`);
+      return fallback;
+    }
+
+    validateRange(name, value, options);
+    return value;
+  }
+
+  return {
+    errors,
+    requiredString(name: string): string {
+      const value = read(name);
+
+      if (!value) {
+        errors.push(`${name} is required.`);
+        return "";
+      }
+
+      return value;
+    },
+    optionalString(name: string): string | undefined {
+      return read(name);
+    },
+    string(name: string, fallback: string): string {
+      return read(name) ?? fallback;
+    },
+    number(name: string, fallback: number, options?: NumberOptions): number {
+      return parseNumber(name, fallback, options);
+    },
+    integer(name: string, fallback: number, options?: NumberOptions): number {
+      const value = parseNumber(name, fallback, options);
+
+      if (!Number.isInteger(value)) {
+        errors.push(`${name} must be an integer.`);
+      }
+
+      return value;
+    },
+    boolean(name: string, fallback: boolean): boolean {
+      const rawValue = read(name)?.toLowerCase();
+
+      if (!rawValue) {
+        return fallback;
+      }
+
+      if (["1", "true", "yes", "y", "on"].includes(rawValue)) {
+        return true;
+      }
+
+      if (["0", "false", "no", "n", "off"].includes(rawValue)) {
+        return false;
+      }
+
+      errors.push(`${name} must be a boolean value.`);
+      return fallback;
+    },
+    enumValue<const T extends readonly string[]>(
+      name: string,
+      allowedValues: T,
+      fallback: T[number]
+    ): T[number] {
+      const value = read(name) ?? fallback;
+
+      if (!(allowedValues as readonly string[]).includes(value)) {
+        errors.push(`${name} must be one of: ${allowedValues.join(", ")}.`);
+        return fallback;
+      }
+
+      return value as T[number];
+    },
+    throwIfInvalid(): void {
+      if (errors.length > 0) {
+        throw new Error(`Invalid environment configuration:\n- ${errors.join("\n- ")}`);
+      }
+    }
+  };
+}
+
+interface NumberOptions {
+  min?: number;
+  max?: number;
 }
