@@ -15,7 +15,7 @@ export function buildDefaultActionPayload(
 ): ActionVisualPayload {
   return {
     embed: {
-      description: phrase.text,
+      description: buildDescription(context, phrase),
       imageUrl: gif?.imageUrl,
       footer: buildAffinityFooter(affinity),
       timestamp: context.now
@@ -65,6 +65,23 @@ export interface RequiredActionPayloadContext extends ActionContext {
 
 function displayName(user: { id: string; displayName?: string }): string {
   return user.displayName ?? `<@${user.id}>`;
+}
+
+function buildDescription(
+  context: RequiredActionPayloadContext,
+  phrase: ActionPhraseSelection
+): string {
+  const customMessage = readCustomMessage(context.metadata?.customMessage);
+
+  if (!customMessage) {
+    return phrase.text;
+  }
+
+  return `${phrase.text}\n\n"${customMessage}"`;
+}
+
+function readCustomMessage(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
 function buildAffinityFooter(affinity: ActionAffinityResult): string | undefined {

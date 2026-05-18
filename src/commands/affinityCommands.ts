@@ -1,6 +1,7 @@
-import { EmbedBuilder, SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
 import { affinityQueryService } from "../services";
 import type { SlashCommandDefinition } from "../types";
+import { buildAffinityRankingEmbed, buildAffinitySummaryEmbed } from "./affinityResponseAdapter";
 
 const USER_OPTION_NAME = "usuario";
 
@@ -33,30 +34,9 @@ export const affinityCommand: SlashCommandDefinition = {
       target.id
     );
 
-    const embed = new EmbedBuilder()
-      .setColor(0xf2a7b8)
-      .setTitle("Afinidade")
-      .setDescription(`<@${interaction.user.id}> e <@${target.id}>`)
-      .addFields(
-        {
-          name: "Pontos",
-          value: summary.points.toString(),
-          inline: true
-        },
-        {
-          name: "Interacoes",
-          value: summary.interactionCount.toString(),
-          inline: true
-        },
-        {
-          name: "Ultima interacao",
-          value: formatDate(summary.lastInteractionAt),
-          inline: true
-        }
-      )
-      .setTimestamp(new Date());
-
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply({
+      embeds: [buildAffinitySummaryEmbed(interaction.user.id, target.id, summary)]
+    });
   }
 };
 
@@ -78,35 +58,6 @@ export const rankAffinityCommand: SlashCommandDefinition = {
 
     const ranking = await affinityQueryService.getGuildRanking(interaction.guildId, 10);
 
-    const embed = new EmbedBuilder()
-      .setColor(0xf2a7b8)
-      .setTitle("Ranking de Afinidade")
-      .setDescription(formatRanking(ranking))
-      .setTimestamp(new Date());
-
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply({ embeds: [buildAffinityRankingEmbed(ranking)] });
   }
 };
-
-function formatRanking(
-  ranking: Awaited<ReturnType<typeof affinityQueryService.getGuildRanking>>
-): string {
-  if (ranking.length === 0) {
-    return "Ainda nao ha pares de afinidade registrados neste servidor.";
-  }
-
-  return ranking
-    .map(
-      (entry) =>
-        `${entry.position}. <@${entry.userAId}> + <@${entry.userBId}> - ${entry.points} pontos (${entry.interactionCount} interacoes)`
-    )
-    .join("\n");
-}
-
-function formatDate(date: Date | null | undefined): string {
-  if (!date) {
-    return "Ainda sem interacoes";
-  }
-
-  return `<t:${Math.floor(date.getTime() / 1000)}:R>`;
-}

@@ -1,6 +1,7 @@
 import { Events, type Client } from "discord.js";
 import type { AppConfig } from "../config";
-import { prefixCommands } from "../commands";
+import { parsePrefixCommand, prefixCommands } from "../commands";
+import { prefixService } from "../services";
 import { logger } from "../utils";
 
 export function registerMessageHandler(client: Client, config: AppConfig): void {
@@ -9,28 +10,39 @@ export function registerMessageHandler(client: Client, config: AppConfig): void 
       return;
     }
 
-    if (!message.content.startsWith(config.defaultPrefix)) {
+    const prefix = await getGuildPrefix(message.guild.id, config.defaultPrefix);
+    const parsedCommand = parsePrefixCommand(message.content, prefix);
+
+    if (!parsedCommand) {
       return;
     }
 
-    const content = message.content.slice(config.defaultPrefix.length).trim();
-
-    if (!content) {
-      return;
-    }
-
-    const [rawCommandName, ...args] = content.split(/\s+/);
-    const commandName = rawCommandName.toLowerCase();
-    const command = prefixCommands.get(commandName);
+    const command = prefixCommands.get(parsedCommand.commandName);
 
     if (!command) {
       return;
     }
 
     try {
-      await command.execute({ message, args, commandName });
+      await command.execute({
+        message,
+        args: parsedCommand.args,
+        commandName: parsedCommand.commandName,
+        prefix,
+        rawArgs: parsedCommand.rawArgs
+      });
     } catch (error) {
-      logger.error(`Prefix command failed: ${commandName}`, error);
+      logger.error(`Prefix command failed: ${parsedCommand.commandName}`, error);
+      await message.reply("Nao consegui concluir este comando agora.");
     }
   });
+}
+
+async function getGuildPrefix(guildId: string, fallbackPrefix: string): Promise<string> {
+  try {
+    return await prefixService.getPrefixForGuild(guildId, fallbackPrefix);
+  } catch (error) {
+    logger.warn("Failed to load guild prefix. Falling back to default prefix.", error);
+    return fallbackPrefix;
+  }
 }

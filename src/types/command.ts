@@ -13,6 +13,8 @@ export interface PrefixCommandContext {
   message: Message;
   args: string[];
   commandName: string;
+  prefix: string;
+  rawArgs: string;
 }
 
 export interface PrefixCommandDefinition {

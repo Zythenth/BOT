@@ -6,7 +6,9 @@ import {
   type ButtonInteraction,
   type ChatInputCommandInteraction,
   type InteractionEditReplyOptions,
-  type InteractionReplyOptions
+  type InteractionReplyOptions,
+  type Message,
+  type MessageReplyOptions
 } from "discord.js";
 import type { ActionResponseButton, ActionResult } from "../types";
 
@@ -29,6 +31,13 @@ export async function replyWithActionResult(
   }
 
   await interaction.reply(options);
+}
+
+export async function replyToMessageWithActionResult(
+  message: Message,
+  result: ActionResult
+): Promise<void> {
+  await message.reply(toActionMessageReplyOptions(result));
 }
 
 export function toActionReplyOptions(result: ActionResult): InteractionReplyOptions {
@@ -86,6 +95,19 @@ export function toActionReplyOptions(result: ActionResult): InteractionReplyOpti
   }
 
   return options;
+}
+
+export function toActionMessageReplyOptions(result: ActionResult): MessageReplyOptions {
+  if (!result.ok) {
+    return {
+      content: result.message
+    };
+  }
+
+  const options = toActionReplyOptions(result);
+  const { ephemeral: _ephemeral, ...messageOptions } = options;
+
+  return messageOptions;
 }
 
 function buildActionRows(

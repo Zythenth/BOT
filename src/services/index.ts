@@ -5,4 +5,5 @@ export * from "./affinityQueryService";
 export * from "./gifService";
 export * from "./gifRatioService";
 export * from "./giphyProviderService";
+export * from "./prefixService";
 export * from "./retributeService";
