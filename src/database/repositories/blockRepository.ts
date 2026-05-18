@@ -18,6 +18,14 @@ export interface ListBlocksFilters extends ListOptions {
   category?: string;
 }
 
+export interface ExactBlockFilters {
+  guildId: string;
+  blockerUserId: string;
+  blockedUserId?: string | null;
+  category?: string | null;
+  action?: string | null;
+}
+
 export const blockRepository = {
   create(data: Prisma.BlockUncheckedCreateInput, db: RepositoryClient = prisma) {
     return db.block.create({
@@ -81,9 +89,40 @@ export const blockRepository = {
     });
   },
 
+  findExact(filters: ExactBlockFilters, db: RepositoryClient = prisma) {
+    return db.block.findFirst({
+      where: buildExactWhere(filters)
+    });
+  },
+
+  deleteMany(filters: ExactBlockFilters, db: RepositoryClient = prisma) {
+    return db.block.deleteMany({
+      where: buildExactWhere(filters)
+    });
+  },
+
+  deleteAllForBlocker(guildId: string, blockerUserId: string, db: RepositoryClient = prisma) {
+    return db.block.deleteMany({
+      where: {
+        guildId,
+        blockerUserId
+      }
+    });
+  },
+
   deleteById(id: string, db: RepositoryClient = prisma) {
     return db.block.delete({
       where: { id }
     });
   }
 };
+
+function buildExactWhere(filters: ExactBlockFilters): Prisma.BlockWhereInput {
+  return {
+    guildId: filters.guildId,
+    blockerUserId: filters.blockerUserId,
+    blockedUserId: filters.blockedUserId ?? null,
+    category: filters.category ?? null,
+    action: filters.action ?? null
+  };
+}

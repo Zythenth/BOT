@@ -14,6 +14,27 @@ export const userPreferenceRepository = {
     });
   },
 
+  listHiddenFromRankingsByUserIds(userIds: readonly string[], db: RepositoryClient = prisma) {
+    const uniqueUserIds = [...new Set(userIds)];
+
+    if (uniqueUserIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return db.userPreference.findMany({
+      where: {
+        userId: { in: uniqueUserIds },
+        OR: [
+          { hideFromRankings: true },
+          { optedOutOfAffinity: true }
+        ]
+      },
+      select: {
+        userId: true
+      }
+    });
+  },
+
   upsert(input: UpsertUserPreferenceInput, db: RepositoryClient = prisma) {
     const { userId, ...values } = input;
 

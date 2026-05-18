@@ -11,11 +11,17 @@ export const ACTION_NAMES = [
 ] as const;
 
 export const ACTION_CATEGORIES = [
+  "carinho_fofo",
+  "romance_leve",
+  "apoio_emocional",
+  "brincadeira",
+  "utilitario",
+  "admin",
+  "consulta",
+  "neutro",
   "carinho",
   "romance",
-  "apoio",
-  "brincadeira",
-  "neutro"
+  "apoio"
 ] as const;
 
 export const ACTION_SOURCES = ["slash", "prefix", "button"] as const;
@@ -73,9 +79,30 @@ export interface ActionGifSelection {
 export interface ActionAffinityResult {
   pointsAwarded: number;
   totalPoints?: number;
+  previousTotalPoints?: number;
   affinityPairId?: string;
   dailyLimitReached?: boolean;
+  cooldownUntil?: Date;
+  maxPointsReached?: boolean;
+  milestone?: ActionAffinityMilestone;
+  previousMilestone?: ActionAffinityMilestone;
+  milestoneReached?: boolean;
+  scoreReason?: ActionAffinityScoreReason;
 }
+
+export interface ActionAffinityMilestone {
+  key: string;
+  name: string;
+  minPoints: number;
+}
+
+export type ActionAffinityScoreReason =
+  | "awarded"
+  | "not_pointable"
+  | "opt_out"
+  | "cooldown"
+  | "daily_limit"
+  | "max_points";
 
 export interface ActionResponseButton {
   type: "button";

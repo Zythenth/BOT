@@ -1,4 +1,21 @@
-import { affinityRepository } from "../database";
+import { affinityRepository, interactionRepository, type ActionCountResult } from "../database";
+import {
+  getAffinityMilestone,
+  getRpActionStatsLabel,
+  RP_ACTION_DEFINITIONS
+} from "../config";
+import { rankingService, type AffinityRankingEntry } from "./rankingService";
+
+export interface ActionUsageCount {
+  action: string;
+  label: string;
+  count: number;
+}
+
+export interface ActionUsageBreakdown {
+  fromUserOneToUserTwo: ActionUsageCount[];
+  fromUserTwoToUserOne: ActionUsageCount[];
+}
 
 export interface AffinityPairSummary {
   userAId: string;
@@ -6,10 +23,8 @@ export interface AffinityPairSummary {
   points: number;
   interactionCount: number;
   lastInteractionAt?: Date | null;
-}
-
-export interface AffinityRankingEntry extends AffinityPairSummary {
-  position: number;
+  milestone: ReturnType<typeof getAffinityMilestone>;
+  actionBreakdown: ActionUsageBreakdown;
 }
 
 export const affinityQueryService = {
@@ -18,7 +33,10 @@ export const affinityQueryService = {
     userOneId: string,
     userTwoId: string
   ): Promise<AffinityPairSummary> {
-    const pair = await affinityRepository.findPair(guildId, userOneId, userTwoId);
+    const [pair, actionBreakdown] = await Promise.all([
+      affinityRepository.findPair(guildId, userOneId, userTwoId),
+      getActionUsageBreakdown(guildId, userOneId, userTwoId)
+    ]);
     const normalizedPair = affinityRepository.normalizePair(userOneId, userTwoId);
 
     if (!pair) {
@@ -26,7 +44,9 @@ export const affinityQueryService = {
         ...normalizedPair,
         points: 0,
         interactionCount: 0,
-        lastInteractionAt: null
+        lastInteractionAt: null,
+        milestone: getAffinityMilestone(0),
+        actionBreakdown
       };
     }
 
@@ -35,20 +55,55 @@ export const affinityQueryService = {
       userBId: pair.userBId,
       points: pair.points,
       interactionCount: pair.interactionCount,
-      lastInteractionAt: pair.lastInteractionAt
+      lastInteractionAt: pair.lastInteractionAt,
+      milestone: getAffinityMilestone(pair.points),
+      actionBreakdown
     };
   },
 
   async getGuildRanking(guildId: string, limit = 10): Promise<AffinityRankingEntry[]> {
-    const pairs = await affinityRepository.listByGuild(guildId, { take: limit });
+    const ranking = await rankingService.getGuildPairRanking({
+      guildId,
+      pageSize: limit
+    });
 
-    return pairs.map((pair, index) => ({
-      position: index + 1,
-      userAId: pair.userAId,
-      userBId: pair.userBId,
-      points: pair.points,
-      interactionCount: pair.interactionCount,
-      lastInteractionAt: pair.lastInteractionAt
-    }));
+    return ranking.entries;
   }
 };
+
+async function getActionUsageBreakdown(
+  guildId: string,
+  userOneId: string,
+  userTwoId: string
+): Promise<ActionUsageBreakdown> {
+  const actions = RP_ACTION_DEFINITIONS.map((definition) => definition.action);
+  const [fromUserOneToUserTwo, fromUserTwoToUserOne] = await Promise.all([
+    interactionRepository.countActionsBetweenUsers({
+      guildId,
+      actorUserId: userOneId,
+      targetUserId: userTwoId,
+      actions
+    }),
+    interactionRepository.countActionsBetweenUsers({
+      guildId,
+      actorUserId: userTwoId,
+      targetUserId: userOneId,
+      actions
+    })
+  ]);
+
+  return {
+    fromUserOneToUserTwo: buildUsageCounts(fromUserOneToUserTwo),
+    fromUserTwoToUserOne: buildUsageCounts(fromUserTwoToUserOne)
+  };
+}
+
+function buildUsageCounts(counts: readonly ActionCountResult[]): ActionUsageCount[] {
+  const countByAction = new Map(counts.map((count) => [count.action, count.count]));
+
+  return RP_ACTION_DEFINITIONS.map((definition) => ({
+    action: definition.action,
+    label: getRpActionStatsLabel(definition.action),
+    count: countByAction.get(definition.action) ?? 0
+  }));
+}

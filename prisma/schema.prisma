@@ -30,6 +30,7 @@ model UserPreference {
   locale           String   @default("pt-BR")
   allowRomance     Boolean  @default(false)
   hideFromRankings Boolean  @default(false)
+  optedOutOfAffinity Boolean @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

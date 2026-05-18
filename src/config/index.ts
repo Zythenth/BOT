@@ -1,3 +1,4 @@
+export * from "./affinity";
 export * from "./constants";
 export * from "./env";
 export * from "./gifRatio";

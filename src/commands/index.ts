@@ -3,6 +3,7 @@ import type { PrefixCommandDefinition, SlashCommandDefinition } from "../types";
 import { affinityCommand, rankAffinityCommand } from "./affinityCommands";
 import { helpCommand } from "./helpCommand";
 import { prefixCommandDefinitions } from "./prefixCommands";
+import { privacySlashCommands } from "./privacyCommands";
 import { rpSlashCommands } from "./rpCommands";
 
 export * from "./actionResponseAdapter";
@@ -15,6 +16,7 @@ for (const command of [
   ...rpSlashCommands,
   affinityCommand,
   rankAffinityCommand,
+  ...privacySlashCommands,
   helpCommand
 ]) {
   slashCommands.set(command.name, command);

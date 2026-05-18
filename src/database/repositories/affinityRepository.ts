@@ -15,6 +15,10 @@ export interface IncrementAffinityInput {
   interactedAt?: Date;
 }
 
+export interface RecordAffinityActionInput extends IncrementAffinityInput {
+  pointsAwarded: number;
+}
+
 export function normalizeAffinityPair(userOneId: string, userTwoId: string): NormalizedAffinityPair {
   return userOneId <= userTwoId
     ? { userAId: userOneId, userBId: userTwoId }
@@ -94,6 +98,39 @@ export const affinityRepository = {
         interactionCount: { increment: 1 },
         lastInteractionAt
       }
+    });
+  },
+
+  recordAction(input: RecordAffinityActionInput, db: RepositoryClient = prisma) {
+    const { userAId, userBId } = normalizeAffinityPair(input.userOneId, input.userTwoId);
+    const pointsAwarded = Math.max(0, input.pointsAwarded);
+    const lastInteractionAt = input.interactedAt ?? new Date();
+    const update: Prisma.AffinityPairUncheckedUpdateInput = {
+      interactionCount: { increment: 1 },
+      lastInteractionAt
+    };
+
+    if (pointsAwarded > 0) {
+      update.points = { increment: pointsAwarded };
+    }
+
+    return db.affinityPair.upsert({
+      where: {
+        guildId_userAId_userBId: {
+          guildId: input.guildId,
+          userAId,
+          userBId
+        }
+      },
+      create: {
+        guildId: input.guildId,
+        userAId,
+        userBId,
+        points: pointsAwarded,
+        interactionCount: 1,
+        lastInteractionAt
+      },
+      update
     });
   },
 

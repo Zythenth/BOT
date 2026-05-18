@@ -8,11 +8,11 @@ export function buildHelpEmbed(prefix = "-"): EmbedBuilder {
     .addFields(
       {
         name: "Carinho",
-        value: formatCommandsByCategory("carinho", prefix)
+        value: formatCommandsByCategory("carinho_fofo", prefix)
       },
       {
         name: "Apoio",
-        value: formatCommandsByCategory("apoio", prefix)
+        value: formatCommandsByCategory("apoio_emocional", prefix)
       },
       {
         name: "Brincadeira",
@@ -25,6 +25,11 @@ export function buildHelpEmbed(prefix = "-"): EmbedBuilder {
       {
         name: "Ajuda",
         value: formatCommandPair("help", prefix)
+      },
+      {
+        name: "Privacidade",
+        value:
+          "`/bloquearrp`, `/desbloquearrp`, `/bloquearcategoria`, `/preferencias`, `/optout`, `/optin`"
       }
     )
     .setFooter({ text: `Prefixo atual: ${prefix}` })

@@ -1,6 +1,6 @@
 import type { User } from "discord.js";
 import { RP_ACTION_DEFINITIONS, type RpActionDefinition } from "../config";
-import { actionService, affinityQueryService } from "../services";
+import { actionService, affinityQueryService, rankingService } from "../services";
 import type { ActionContext, PrefixCommandDefinition, PrefixCommandContext } from "../types";
 import { replyToMessageWithActionResult } from "./actionResponseAdapter";
 import { buildAffinityRankingEmbed, buildAffinitySummaryEmbed } from "./affinityResponseAdapter";
@@ -79,7 +79,11 @@ function createRankAffinityPrefixCommand(): PrefixCommandDefinition {
         return;
       }
 
-      const ranking = await affinityQueryService.getGuildRanking(context.message.guildId, 10);
+      const ranking = await rankingService.getGuildPairRanking({
+        guildId: context.message.guildId,
+        page: parseRankingPage(context.args)
+      });
+
       await context.message.reply({ embeds: [buildAffinityRankingEmbed(ranking)] });
     }
   };
@@ -132,4 +136,14 @@ function buildPrefixActionContext(
         }
       : undefined
   };
+}
+
+function parseRankingPage(args: readonly string[]): number {
+  const page = Number(args[0]);
+
+  if (!Number.isInteger(page) || page < 1) {
+    return 1;
+  }
+
+  return page;
 }

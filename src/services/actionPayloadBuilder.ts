@@ -85,17 +85,33 @@ function readCustomMessage(value: unknown): string | undefined {
 }
 
 function buildAffinityFooter(affinity: ActionAffinityResult): string | undefined {
-  if (affinity.dailyLimitReached) {
-    return "Limite diario de afinidade atingido.";
-  }
-
-  if (affinity.pointsAwarded > 0 && affinity.totalPoints !== undefined) {
-    return `+${affinity.pointsAwarded} afinidade | Total: ${affinity.totalPoints}`;
-  }
+  const segments: string[] = [];
 
   if (affinity.pointsAwarded > 0) {
-    return `+${affinity.pointsAwarded} afinidade`;
+    segments.push(`+${affinity.pointsAwarded} afinidade`);
   }
 
-  return undefined;
+  if (affinity.scoreReason === "cooldown") {
+    segments.push("Sem pontos: cooldown ativo");
+  }
+
+  if (affinity.dailyLimitReached) {
+    segments.push("Sem pontos: limite diario atingido");
+  }
+
+  if (affinity.maxPointsReached) {
+    segments.push("Afinidade maxima");
+  }
+
+  if (affinity.totalPoints !== undefined) {
+    segments.push(`Total: ${affinity.totalPoints}`);
+  }
+
+  if (affinity.milestoneReached && affinity.milestone) {
+    segments.push(`Novo marco: ${affinity.milestone.name}`);
+  } else if (affinity.milestone) {
+    segments.push(`Marco: ${affinity.milestone.name}`);
+  }
+
+  return segments.length > 0 ? segments.join(" | ") : undefined;
 }

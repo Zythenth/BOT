@@ -1,5 +1,4 @@
 import {
-  blockRepository,
   guildRepository,
   interactionRepository,
   phraseRepository
@@ -18,6 +17,8 @@ import {
   type RequiredActionPayloadContext
 } from "./actionPayloadBuilder";
 import { failAction, validateBaseActionContext } from "./actionValidation";
+import { affinityService } from "./affinityService";
+import { blockService } from "./blockService";
 import { gifService } from "./gifService";
 
 export interface ActionServiceDependencies {
@@ -118,31 +119,7 @@ const defaultActionServiceDependencies: ActionServiceDependencies = {
   },
 
   async validateBlocks(context) {
-    const targetBlock = await blockRepository.findMatching({
-      guildId: context.guild.id,
-      blockerUserId: context.target.id,
-      blockedUserId: context.actor.id,
-      category: context.category,
-      action: context.action
-    });
-
-    if (targetBlock) {
-      return failAction("blocked", "Essa pessoa bloqueou este tipo de interacao.");
-    }
-
-    const actorBlock = await blockRepository.findMatching({
-      guildId: context.guild.id,
-      blockerUserId: context.actor.id,
-      blockedUserId: context.target.id,
-      category: context.category,
-      action: context.action
-    });
-
-    if (actorBlock) {
-      return failAction("blocked", "Voce bloqueou este tipo de interacao.");
-    }
-
-    return null;
+    return blockService.validateActionPrivacy(context);
   },
 
   async validatePermissions() {
@@ -184,11 +161,16 @@ const defaultActionServiceDependencies: ActionServiceDependencies = {
     });
   },
 
-  async calculateAffinity() {
-    // Full affinity scoring, daily limits and milestones will be wired in a later stage.
-    return {
-      pointsAwarded: 0
-    };
+  async calculateAffinity(context) {
+    return affinityService.applyAction({
+      guildId: context.guild.id,
+      actorUserId: context.actor.id,
+      targetUserId: context.target.id,
+      action: context.action,
+      category: context.category,
+      source: context.source,
+      occurredAt: context.now
+    });
   },
 
   async saveHistory(context, _phrase, gif, affinity) {

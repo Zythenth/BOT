@@ -11,6 +11,37 @@ export interface ListInteractionsFilters extends ListOptions {
   targetUserId?: string;
 }
 
+export interface ScoredPairActionFilters {
+  guildId: string;
+  affinityPairId: string;
+  action: string;
+  since?: Date;
+}
+
+export interface ScoredPairFilters {
+  guildId: string;
+  affinityPairId: string;
+  since?: Date;
+}
+
+export interface ScoredUserFilters {
+  guildId: string;
+  userId: string;
+  since?: Date;
+}
+
+export interface CountActionsBetweenUsersFilters {
+  guildId: string;
+  actorUserId: string;
+  targetUserId: string;
+  actions?: readonly string[];
+}
+
+export interface ActionCountResult {
+  action: string;
+  count: number;
+}
+
 export const interactionRepository = {
   create(data: Prisma.InteractionUncheckedCreateInput, db: RepositoryClient = prisma) {
     return db.interaction.create({
@@ -39,5 +70,121 @@ export const interactionRepository = {
       take: filters.take ?? DEFAULT_LIST_TAKE,
       skip: filters.skip
     });
+  },
+
+  findLatestScoredForPairAction(
+    filters: ScoredPairActionFilters,
+    db: RepositoryClient = prisma
+  ) {
+    return db.interaction.findFirst({
+      where: {
+        guildId: filters.guildId,
+        affinityPairId: filters.affinityPairId,
+        action: filters.action,
+        pointsAwarded: { gt: 0 },
+        createdAt: filters.since ? { gte: filters.since } : undefined
+      },
+      orderBy: { createdAt: "desc" }
+    });
+  },
+
+  findLatestScoredForUser(filters: ScoredUserFilters, db: RepositoryClient = prisma) {
+    return db.interaction.findFirst({
+      where: {
+        guildId: filters.guildId,
+        pointsAwarded: { gt: 0 },
+        createdAt: filters.since ? { gte: filters.since } : undefined,
+        OR: [
+          { actorUserId: filters.userId },
+          { targetUserId: filters.userId }
+        ]
+      },
+      orderBy: { createdAt: "desc" }
+    });
+  },
+
+  async sumScoredPointsForPair(
+    filters: ScoredPairFilters,
+    db: RepositoryClient = prisma
+  ): Promise<number> {
+    const result = await db.interaction.aggregate({
+      where: {
+        guildId: filters.guildId,
+        affinityPairId: filters.affinityPairId,
+        pointsAwarded: { gt: 0 },
+        createdAt: filters.since ? { gte: filters.since } : undefined
+      },
+      _sum: {
+        pointsAwarded: true
+      }
+    });
+
+    return result._sum.pointsAwarded ?? 0;
+  },
+
+  async sumScoredPointsForUser(
+    filters: ScoredUserFilters,
+    db: RepositoryClient = prisma
+  ): Promise<number> {
+    const result = await db.interaction.aggregate({
+      where: {
+        guildId: filters.guildId,
+        pointsAwarded: { gt: 0 },
+        createdAt: filters.since ? { gte: filters.since } : undefined,
+        OR: [
+          { actorUserId: filters.userId },
+          { targetUserId: filters.userId }
+        ]
+      },
+      _sum: {
+        pointsAwarded: true
+      }
+    });
+
+    return result._sum.pointsAwarded ?? 0;
+  },
+
+  countScoredInteractionsForUser(filters: ScoredUserFilters, db: RepositoryClient = prisma) {
+    return db.interaction.count({
+      where: {
+        guildId: filters.guildId,
+        pointsAwarded: { gt: 0 },
+        createdAt: filters.since ? { gte: filters.since } : undefined,
+        OR: [
+          { actorUserId: filters.userId },
+          { targetUserId: filters.userId }
+        ]
+      }
+    });
+  },
+
+  async countActionsBetweenUsers(
+    filters: CountActionsBetweenUsersFilters,
+    db: RepositoryClient = prisma
+  ): Promise<ActionCountResult[]> {
+    const where: Prisma.InteractionWhereInput = {
+      guildId: filters.guildId,
+      actorUserId: filters.actorUserId,
+      targetUserId: filters.targetUserId
+    };
+
+    if (filters.actions && filters.actions.length > 0) {
+      where.action = {
+        in: [...filters.actions]
+      };
+    }
+
+    const groupedActions = await db.interaction.groupBy({
+      by: ["action"],
+      where,
+      _count: {
+        _all: true
+      }
+    });
+
+    return groupedActions.map((group) => ({
+      action: group.action,
+      count: group._count._all
+    }));
   }
 };

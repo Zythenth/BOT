@@ -1,9 +1,10 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
-import { affinityQueryService } from "../services";
+import { affinityQueryService, rankingService } from "../services";
 import type { SlashCommandDefinition } from "../types";
 import { buildAffinityRankingEmbed, buildAffinitySummaryEmbed } from "./affinityResponseAdapter";
 
 const USER_OPTION_NAME = "usuario";
+const PAGE_OPTION_NAME = "pagina";
 
 export const affinityCommand: SlashCommandDefinition = {
   name: "afinidade",
@@ -46,6 +47,13 @@ export const rankAffinityCommand: SlashCommandDefinition = {
   data: new SlashCommandBuilder()
     .setName("rankafinidade")
     .setDescription("Mostra o ranking de afinidade do servidor.")
+    .addIntegerOption((option) =>
+      option
+        .setName(PAGE_OPTION_NAME)
+        .setDescription("Pagina do ranking.")
+        .setMinValue(1)
+        .setRequired(false)
+    )
     .setDMPermission(false),
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guildId) {
@@ -56,7 +64,10 @@ export const rankAffinityCommand: SlashCommandDefinition = {
       return;
     }
 
-    const ranking = await affinityQueryService.getGuildRanking(interaction.guildId, 10);
+    const ranking = await rankingService.getGuildPairRanking({
+      guildId: interaction.guildId,
+      page: interaction.options.getInteger(PAGE_OPTION_NAME) ?? 1
+    });
 
     await interaction.reply({ embeds: [buildAffinityRankingEmbed(ranking)] });
   }
