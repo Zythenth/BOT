@@ -17,17 +17,25 @@ export interface AliasService {
 const BUILT_IN_ALIASES: Record<string, string> = {
   abraco: "hug",
   abracar: "hug",
-  beijin: "kiss",
-  beijo: "kiss",
   beijonatesta: "beijotesta",
+  bjt: "beijotesta",
+  foreheadkiss: "beijotesta",
   testada: "beijotesta",
   beijobochecha: "beijobochecha",
+  bjb: "beijobochecha",
   bochecha: "beijobochecha",
+  cheekkiss: "beijobochecha",
   cafune: "cafune",
   carinho: "cafune",
+  headpat: "cafune",
+  pat: "cafune",
   consolo: "consolar",
+  comfort: "consolar",
   proteger: "proteger",
+  protect: "proteger",
+  bite: "morder",
   mordida: "morder",
+  poke: "cutucar",
   cutucao: "cutucar"
 };
 

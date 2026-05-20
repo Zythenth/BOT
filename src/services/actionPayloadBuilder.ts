@@ -44,7 +44,8 @@ export function buildRetributeCustomId(context: RequiredActionPayloadContext): s
     context.action,
     context.guild.id,
     context.actor.id,
-    context.target.id
+    context.target.id,
+    context.now.getTime().toString(36)
   ].join(":");
 }
 

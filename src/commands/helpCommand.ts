@@ -7,7 +7,8 @@ export const helpCommand: SlashCommandDefinition = {
   description: "Lista os comandos principais do MVP.",
   data: new SlashCommandBuilder()
     .setName("help")
-    .setDescription("Lista os comandos principais do MVP."),
+    .setDescription("Lista os comandos principais do MVP.")
+    .setDMPermission(false),
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     await interaction.reply({ embeds: [buildHelpEmbed()], ephemeral: true });
   }

@@ -141,6 +141,7 @@ export type ActionFailureCode =
   | "channel_not_allowed"
   | "missing_permission"
   | "cooldown"
+  | "expired"
   | "unknown_error";
 
 export type ActionResult =

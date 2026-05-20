@@ -1,4 +1,4 @@
-# RP Affection Bot
+# Aurora
 
 Bot privado de Discord para a Aurora, focado em interacoes RP leves, afinidade por servidor, GIFs moderados e controles de privacidade.
 
@@ -196,8 +196,8 @@ Docker e VPS fazem parte do alvo de deploy do projeto, mas este repositorio aind
 Quando um `Dockerfile` for adicionado, o fluxo esperado sera:
 
 ```bat
-docker build -t rp-affection-bot .
-docker run --env-file .env rp-affection-bot
+docker build -t aurora-bot .
+docker run --env-file .env aurora-bot
 ```
 
 Ate la, rode em producao com Node.js diretamente ou prepare o Dockerfile em uma etapa propria.

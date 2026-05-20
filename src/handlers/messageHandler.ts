@@ -1,7 +1,7 @@
 import { Events, type Client } from "discord.js";
 import type { AppConfig } from "../config";
 import { parsePrefixCommand, prefixCommands } from "../commands";
-import { prefixService } from "../services";
+import { aliasService, prefixService } from "../services";
 import { logger } from "../utils";
 
 export function registerMessageHandler(client: Client, config: AppConfig): void {
@@ -17,14 +17,23 @@ export function registerMessageHandler(client: Client, config: AppConfig): void 
       return;
     }
 
-    const command = prefixCommands.get(parsedCommand.commandName);
+    const resolvedCommandName = await aliasService.resolveCommandName(
+      message.guild.id,
+      parsedCommand.commandName
+    );
+
+    if (!resolvedCommandName) {
+      return;
+    }
+
+    const command = prefixCommands.get(resolvedCommandName);
 
     if (!command) {
       return;
     }
 
     const logContext = {
-      commandName: `${prefix}${parsedCommand.commandName}`,
+      commandName: `${prefix}${resolvedCommandName}`,
       commandType: "prefix" as const,
       guildId: message.guild.id,
       userId: message.author.id
@@ -35,7 +44,7 @@ export function registerMessageHandler(client: Client, config: AppConfig): void 
       await command.execute({
         message,
         args: parsedCommand.args,
-        commandName: parsedCommand.commandName,
+        commandName: resolvedCommandName,
         prefix,
         rawArgs: parsedCommand.rawArgs
       });

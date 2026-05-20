@@ -5,6 +5,7 @@ import { actionService } from "./actionService";
 import { failAction } from "./actionValidation";
 
 const RETRIBUTE_BUTTON_PREFIX = "rp:retribute:";
+const RETRIBUTE_BUTTON_TTL_MS = 15 * 60 * 1000;
 
 export function isRetributeButtonCustomId(customId: string): boolean {
   return customId.startsWith(RETRIBUTE_BUTTON_PREFIX);
@@ -23,7 +24,11 @@ export const retributeService = {
     }
 
     if (interaction.user.id !== parsed.originalTargetUserId) {
-      return failAction("blocked", "Apenas o alvo original pode retribuir esta acao.");
+      return failAction("blocked", "So quem recebeu essa acao pode retribuir.");
+    }
+
+    if (isExpired(parsed.createdAt, new Date())) {
+      return failAction("expired", "Esse botao expirou. Use o comando de novo.");
     }
 
     const definition = getRpActionDefinition(parsed.action);
@@ -47,10 +52,11 @@ interface ParsedRetributeCustomId {
   guildId: string;
   originalActorUserId: string;
   originalTargetUserId: string;
+  createdAt?: Date;
 }
 
 function parseRetributeCustomId(customId: string): ParsedRetributeCustomId | null {
-  const [namespace, kind, action, guildId, originalActorUserId, originalTargetUserId] =
+  const [namespace, kind, action, guildId, originalActorUserId, originalTargetUserId, timestamp] =
     customId.split(":");
 
   if (
@@ -68,8 +74,29 @@ function parseRetributeCustomId(customId: string): ParsedRetributeCustomId | nul
     action,
     guildId,
     originalActorUserId,
-    originalTargetUserId
+    originalTargetUserId,
+    createdAt: parseBase36Timestamp(timestamp)
   };
+}
+
+function parseBase36Timestamp(value: string | undefined): Date | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const timestamp = Number.parseInt(value, 36);
+
+  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+    return undefined;
+  }
+
+  return new Date(timestamp);
+}
+
+function isExpired(createdAt: Date | undefined, now: Date): boolean {
+  return createdAt
+    ? now.getTime() - createdAt.getTime() > RETRIBUTE_BUTTON_TTL_MS
+    : false;
 }
 
 function buildRetributeContext(
