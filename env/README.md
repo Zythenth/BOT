@@ -26,6 +26,7 @@ Depois preencha no `.env` real:
 DISCORD_TOKEN=seu_token_local
 DISCORD_CLIENT_ID=id_da_aplicacao
 DISCORD_DEV_GUILD_ID=id_do_servidor_de_teste
+DISCORD_ALLOWED_GUILD_IDS=id_do_servidor_de_teste,outro_servidor_autorizado
 GIPHY_API_KEY=sua_chave_quando_a_integracao_giphy_for_usada
 ```
 
@@ -35,6 +36,7 @@ Tambem confirme:
 DATABASE_URL="file:./dev.db"
 GIF_PROVIDER=giphy
 GIPHY_REQUESTS_PER_HOUR=100
+ACTION_COOLDOWN_SECONDS=5
 ALLOW_NSFW=false
 ALLOW_UNCATEGORIZED_GIFS=true
 ```
@@ -52,7 +54,7 @@ Preencha tokens reais somente no `.env` da VPS. Nao envie esse arquivo para Git.
 Para aplicar migrations em producao, prefira:
 
 ```bat
-npm run prisma -- migrate deploy
+npx prisma migrate deploy
 ```
 
 ## Arquivos esperados
@@ -69,4 +71,5 @@ O `.gitignore` deve manter arquivos `.env` reais ignorados e permitir versionar 
 - `DISCORD_TOKEN` e `GIPHY_API_KEY` sao segredos.
 - Se um token vazar, revogue no painel do provider e gere outro.
 - `DISCORD_DEV_GUILD_ID` deve apontar para um servidor de teste durante desenvolvimento.
+- `DISCORD_ALLOWED_GUILD_IDS` e opcional; quando preenchido, a Aurora ignora/sai de servidores fora da lista.
 - Para comandos por prefixo, ative Message Content Intent no Discord Developer Portal.

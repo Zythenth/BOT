@@ -4,6 +4,7 @@ export const SUPPORTED_GUILD_LOCALES = ["pt-BR", "en-US"] as const;
 export type SupportedGuildLocale = (typeof SUPPORTED_GUILD_LOCALES)[number];
 
 export const DEFAULT_GUILD_COOLDOWN_SECONDS = 30;
+export const DEFAULT_ACTION_COOLDOWN_SECONDS = 5;
 
 export const DEFAULT_GUILD_CONFIG = {
   prefix: DEFAULT_PREFIX,

@@ -79,6 +79,7 @@ export function createGifService(
         return undefined;
       }
 
+      const canUseGiphy = await provider.canUseApi();
       const decision = await ratioService.decideSource(
         {
           guildId: request.guildId,
@@ -87,21 +88,21 @@ export function createGifService(
           provider: "giphy"
         },
         {
-          canUseGiphy: provider.canUseApi()
+          canUseGiphy
         }
       );
 
       if (decision.selectedSource === "database") {
         const approvedGif = await pickApprovedGif(request, provider, storage);
 
-        if (approvedGif || !provider.canUseApi()) {
+        if (approvedGif || !(await provider.canUseApi())) {
           return approvedGif;
         }
       }
 
       const searchTerm = pickSearchTerm(searchTerms, request.action);
 
-      if (!searchTerm || !provider.canUseApi()) {
+      if (!searchTerm || !(await provider.canUseApi())) {
         return pickApprovedGif(request, provider, storage);
       }
 

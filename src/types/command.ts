@@ -1,4 +1,4 @@
-import type { ChatInputCommandInteraction, Message } from "discord.js";
+import type { AutocompleteInteraction, ChatInputCommandInteraction, Message } from "discord.js";
 
 export interface SlashCommandDefinition {
   name: string;
@@ -7,6 +7,7 @@ export interface SlashCommandDefinition {
     toJSON(): unknown;
   };
   execute(interaction: ChatInputCommandInteraction): Promise<void>;
+  autocomplete?(interaction: AutocompleteInteraction): Promise<void>;
 }
 
 export interface PrefixCommandContext {

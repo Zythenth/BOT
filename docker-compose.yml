@@ -1,0 +1,15 @@
+services:
+  aurora:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/app/data/aurora.db
+    volumes:
+      - aurora-data:/app/data
+    command: sh -c "npx prisma migrate deploy && node dist/index.js"
+
+volumes:
+  aurora-data:

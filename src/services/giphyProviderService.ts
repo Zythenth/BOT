@@ -1,4 +1,5 @@
 import type { GiphyRating } from "../config";
+import { giphyQuotaRepository } from "../database";
 
 const GIPHY_API_BASE_URL = "https://api.giphy.com/v1/gifs";
 const GIPHY_PROVIDER = "giphy";
@@ -48,58 +49,22 @@ export interface GiphyQuotaSnapshot {
   resetAt: Date;
 }
 
-export class HourlyGiphyRateLimiter {
-  private windowStartedAt = Date.now();
-  private used = 0;
-
-  constructor(private readonly limit: number) {}
-
-  canConsume(now = Date.now()): boolean {
-    this.resetIfNeeded(now);
-    return this.used < this.limit;
-  }
-
-  consume(now = Date.now()): boolean {
-    if (!this.canConsume(now)) {
-      return false;
-    }
-
-    this.used += 1;
-    return true;
-  }
-
-  snapshot(now = Date.now()): GiphyQuotaSnapshot {
-    this.resetIfNeeded(now);
-
-    return {
-      limit: this.limit,
-      used: this.used,
-      remaining: Math.max(this.limit - this.used, 0),
-      resetAt: new Date(this.windowStartedAt + 60 * 60 * 1000)
-    };
-  }
-
-  private resetIfNeeded(now: number): void {
-    if (now - this.windowStartedAt < 60 * 60 * 1000) {
-      return;
-    }
-
-    this.windowStartedAt = now;
-    this.used = 0;
-  }
+export interface GiphyQuotaStore {
+  consume(input: { provider: string; limit: number; now?: Date }): Promise<GiphyQuotaSnapshot | null>;
+  snapshot(input: { provider: string; limit: number; now?: Date }): Promise<GiphyQuotaSnapshot>;
 }
 
 export interface GiphyProviderService {
   search(input: GiphySearchInput): Promise<GiphySearchResult>;
   getById(providerGifId: string): Promise<GiphySingleResult>;
   buildTransientMediaUrl(providerGifId: string): string;
-  getQuotaSnapshot(): GiphyQuotaSnapshot;
-  canUseApi(): boolean;
+  getQuotaSnapshot(): Promise<GiphyQuotaSnapshot>;
+  canUseApi(): Promise<boolean>;
 }
 
 export function createGiphyProviderService(
   config: GiphyProviderConfig,
-  limiter = new HourlyGiphyRateLimiter(config.requestsPerHour)
+  quotaStore: GiphyQuotaStore = giphyQuotaRepository
 ): GiphyProviderService {
   return {
     async search(input) {
@@ -107,7 +72,7 @@ export function createGiphyProviderService(
         return { status: "missing_api_key", gifs: [] };
       }
 
-      if (!limiter.consume()) {
+      if (!(await reserveQuota(config, quotaStore))) {
         return { status: "quota_exhausted", gifs: [] };
       }
 
@@ -141,7 +106,7 @@ export function createGiphyProviderService(
         return { status: "missing_api_key" };
       }
 
-      if (!limiter.consume()) {
+      if (!(await reserveQuota(config, quotaStore))) {
         return { status: "quota_exhausted" };
       }
 
@@ -176,14 +141,38 @@ export function createGiphyProviderService(
       return `https://media.giphy.com/media/${encodeURIComponent(providerGifId)}/giphy.gif`;
     },
 
-    getQuotaSnapshot() {
-      return limiter.snapshot();
+    async getQuotaSnapshot() {
+      return quotaStore.snapshot({
+        provider: GIPHY_PROVIDER,
+        limit: config.requestsPerHour
+      });
     },
 
-    canUseApi() {
-      return Boolean(config.apiKey) && limiter.canConsume();
+    async canUseApi() {
+      if (!config.apiKey) {
+        return false;
+      }
+
+      const snapshot = await quotaStore.snapshot({
+        provider: GIPHY_PROVIDER,
+        limit: config.requestsPerHour
+      });
+
+      return snapshot.remaining > 0;
     }
   };
+}
+
+async function reserveQuota(
+  config: GiphyProviderConfig,
+  quotaStore: GiphyQuotaStore
+): Promise<boolean> {
+  const snapshot = await quotaStore.consume({
+    provider: GIPHY_PROVIDER,
+    limit: config.requestsPerHour
+  });
+
+  return Boolean(snapshot);
 }
 
 export function readGiphyProviderConfigFromEnv(): GiphyProviderConfig {

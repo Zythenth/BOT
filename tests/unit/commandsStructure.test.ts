@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { slashCommands } from "../../src/commands";
 import { RP_ACTION_DEFINITIONS } from "../../src/config";
 
 test("comandos de RP delegam regra critica para services", () => {
@@ -23,6 +24,12 @@ test("kiss e uma acao publica de romance leve", () => {
 
   assert.equal(kiss?.commandName, "kiss");
   assert.equal(kiss?.category, "romance_leve");
+});
+
+test("/rp agrupado existe sem remover slash diretos", () => {
+  assert.ok(slashCommands.has("rp"));
+  assert.ok(slashCommands.has("hug"));
+  assert.ok(slashCommands.has("kiss"));
 });
 
 test("dados base mantem kiss separado dos beijos de testa e bochecha", () => {

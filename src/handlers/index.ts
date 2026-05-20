@@ -6,8 +6,8 @@ import { registerMessageHandler } from "./messageHandler";
 import { registerReadyHandler } from "./readyHandler";
 
 export function registerEventHandlers(client: Client, config: AppConfig): void {
-  registerReadyHandler(client);
+  registerReadyHandler(client, config);
   registerErrorHandler(client);
-  registerInteractionHandler(client);
+  registerInteractionHandler(client, config);
   registerMessageHandler(client, config);
 }

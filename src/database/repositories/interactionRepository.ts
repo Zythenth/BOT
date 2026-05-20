@@ -30,6 +30,20 @@ export interface ScoredUserFilters {
   since?: Date;
 }
 
+export interface LatestActorInteractionFilters {
+  guildId: string;
+  actorUserId: string;
+  since?: Date;
+}
+
+export interface LatestPairInteractionFilters {
+  guildId: string;
+  userOneId: string;
+  userTwoId: string;
+  action?: string;
+  since?: Date;
+}
+
 export interface CountActionsBetweenUsersFilters {
   guildId: string;
   actorUserId: string;
@@ -97,6 +111,38 @@ export const interactionRepository = {
         OR: [
           { actorUserId: filters.userId },
           { targetUserId: filters.userId }
+        ]
+      },
+      orderBy: { createdAt: "desc" }
+    });
+  },
+
+  findLatestForActor(filters: LatestActorInteractionFilters, db: RepositoryClient = prisma) {
+    return db.interaction.findFirst({
+      where: {
+        guildId: filters.guildId,
+        actorUserId: filters.actorUserId,
+        createdAt: filters.since ? { gte: filters.since } : undefined
+      },
+      orderBy: { createdAt: "desc" }
+    });
+  },
+
+  findLatestBetweenUsers(filters: LatestPairInteractionFilters, db: RepositoryClient = prisma) {
+    return db.interaction.findFirst({
+      where: {
+        guildId: filters.guildId,
+        action: filters.action,
+        createdAt: filters.since ? { gte: filters.since } : undefined,
+        OR: [
+          {
+            actorUserId: filters.userOneId,
+            targetUserId: filters.userTwoId
+          },
+          {
+            actorUserId: filters.userTwoId,
+            targetUserId: filters.userOneId
+          }
         ]
       },
       orderBy: { createdAt: "desc" }

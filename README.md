@@ -58,6 +58,7 @@ Depois preencha no `.env`:
 DISCORD_TOKEN=
 DISCORD_CLIENT_ID=
 DISCORD_DEV_GUILD_ID=
+DISCORD_ALLOWED_GUILD_IDS=
 DATABASE_URL="file:./dev.db"
 GIPHY_API_KEY=
 ```
@@ -69,9 +70,11 @@ Variaveis principais:
 - `DISCORD_TOKEN`: token do bot no Discord Developer Portal.
 - `DISCORD_CLIENT_ID`: Application ID do bot.
 - `DISCORD_DEV_GUILD_ID`: ID do servidor de teste; quando preenchido, deploya slash commands apenas nesse servidor.
+- `DISCORD_ALLOWED_GUILD_IDS`: lista opcional separada por virgula; quando preenchida, a Aurora ignora/sai de servidores fora da allowlist.
 - `DATABASE_URL`: caminho SQLite usado pelo Prisma.
 - `GIPHY_API_KEY`: chave da GIPHY API.
-- `GIPHY_REQUESTS_PER_HOUR`: cota local usada pelo bot, padrao `100`.
+- `GIPHY_REQUESTS_PER_HOUR`: cota persistida no SQLite por janela horaria, padrao `100`.
+- `ACTION_COOLDOWN_SECONDS`: cooldown curto anti-flood para bloquear repeticao rapida de RP, padrao `5`.
 - `ALLOW_NSFW`: mantenha `false` no MVP.
 - `ALLOW_UNCATEGORIZED_GIFS`: permite usar GIF novo ainda nao aprovado em proporcao limitada.
 
@@ -100,22 +103,30 @@ Para comandos por prefixo como `-hug`, habilite a **Message Content Intent** no 
 
 ## Prisma e banco
 
+Valide o schema:
+
+```bat
+npx prisma validate
+```
+
 Gere o Prisma Client:
 
 ```bat
-npm run prisma:generate
+npx prisma generate
 ```
 
 Crie/aplique migration local em desenvolvimento:
 
 ```bat
-npm run prisma:migrate -- --name init
+npx prisma migrate dev --name init
 ```
 
-Se ja existirem migrations e voce so quiser aplicar no ambiente:
+Este repositorio possui migrations versionadas em `prisma/migrations`. Se voce ja tem um SQLite local criado antes das migrations, faca backup do arquivo `.db` antes de aplicar qualquer migration. Nao use `reset` em banco com dados reais.
+
+Se ja existirem migrations e voce so quiser aplicar no ambiente, como em producao:
 
 ```bat
-npm run prisma -- migrate deploy
+npx prisma migrate deploy
 ```
 
 Abrir Prisma Studio:
@@ -180,8 +191,9 @@ Fluxo recomendado:
 
 ```bat
 npm install
-npm run prisma:generate
-npm run prisma -- migrate deploy
+npx prisma validate
+npx prisma generate
+npx prisma migrate deploy
 npm run deploy:commands
 npm run build
 npm run start
@@ -191,21 +203,45 @@ Em producao, guarde `.env` em pasta protegida, nunca versionada. Use um gerencia
 
 ## Docker
 
-Docker e VPS fazem parte do alvo de deploy do projeto, mas este repositorio ainda nao possui `Dockerfile` nem `docker-compose.yml`.
+O repositorio possui `Dockerfile` e `docker-compose.yml` para producao. O `.env` real nao e copiado para a imagem; o compose le `.env` em tempo de execucao.
 
-Quando um `Dockerfile` for adicionado, o fluxo esperado sera:
+Build da imagem:
 
 ```bat
 docker build -t aurora-bot .
-docker run --env-file .env aurora-bot
 ```
 
-Ate la, rode em producao com Node.js diretamente ou prepare o Dockerfile em uma etapa propria.
+Subir com compose:
+
+```bat
+docker compose up -d --build
+```
+
+Ver logs:
+
+```bat
+docker compose logs -f aurora
+```
+
+Parar:
+
+```bat
+docker compose down
+```
+
+Reiniciar:
+
+```bat
+docker compose restart aurora
+```
+
+O SQLite fica no volume nomeado `aurora-data`, montado em `/app/data`, com `DATABASE_URL=file:/app/data/aurora.db`. Faca backup desse volume antes de migrations em producao.
 
 ## Comandos do MVP
 
 Slash e prefixo:
 
+- `/rp acao:<autocomplete> alvo:<usuario> mensagem:<opcional>`
 - `/kiss` e `-kiss`
 - `/hug` e `-hug`
 - `/beijotesta` e `-beijotesta`
@@ -218,6 +254,11 @@ Slash e prefixo:
 - `/afinidade` e `-afinidade`
 - `/rankafinidade` e `-rankafinidade`
 - `/help` e `-help`
+
+Tambem e possivel usar mencao ao bot como prefixo auxiliar:
+
+- `@Aurora hug @Usuario`
+- `@Aurora help`
 
 Privacidade:
 
@@ -284,7 +325,7 @@ A proporcao depende da quantidade de GIFs `approved` daquela `action/category`:
 - 100-199 aprovados: 80% banco / 20% GIPHY nova
 - 200+ aprovados: 85% banco / 15% GIPHY nova
 
-Se a cota GIPHY acabar, o bot usa apenas GIFs `approved` do banco. Se nao houver GIF aprovado e nao puder buscar na GIPHY, a resposta deve sair apenas com texto.
+Se a cota GIPHY acabar, o bot usa apenas GIFs `approved` do banco. Se nao houver GIF aprovado e nao puder buscar na GIPHY, a resposta deve sair apenas com texto. A cota fica persistida no SQLite em janelas horarias, entao restart do processo nao zera o contador.
 
 ## Privacidade
 
@@ -305,8 +346,9 @@ Interacoes bloqueadas nao devem enviar RP nem pontuar afinidade. O botao Retribu
 ```bat
 npm install
 copy env\.env.development.example .env
-npm run prisma:generate
-npm run prisma:migrate -- --name init
+npx prisma validate
+npx prisma generate
+npx prisma migrate dev --name init
 npm run deploy:commands
 npm run test
 npm run typecheck

@@ -1,11 +1,29 @@
 import { Events, type Client, type Interaction } from "discord.js";
 import { replyWithActionResult, slashCommands } from "../commands";
-import { isRetributeButtonCustomId, retributeService } from "../services";
+import type { AppConfig } from "../config";
+import { guildAccessService, isRetributeButtonCustomId, retributeService } from "../services";
 import { logger } from "../utils";
 
-export function registerInteractionHandler(client: Client): void {
+export function registerInteractionHandler(client: Client, config: AppConfig): void {
   client.on(Events.InteractionCreate, async (interaction) => {
     try {
+      if (!(await ensureAllowedGuildInteraction(interaction, config))) {
+        return;
+      }
+
+      if (interaction.isAutocomplete()) {
+        const command = slashCommands.get(interaction.commandName);
+        const context = getInteractionLogContext(interaction, `/${interaction.commandName}`, "slash");
+
+        if (!command?.autocomplete) {
+          logger.warn("Ignored autocomplete without handler.", context);
+          return;
+        }
+
+        await command.autocomplete(interaction);
+        return;
+      }
+
       if (interaction.isChatInputCommand()) {
         const command = slashCommands.get(interaction.commandName);
         const context = getInteractionLogContext(interaction, `/${interaction.commandName}`, "slash");
@@ -33,6 +51,34 @@ export function registerInteractionHandler(client: Client): void {
       await replyWithGenericInteractionError(interaction);
     }
   });
+}
+
+async function ensureAllowedGuildInteraction(
+  interaction: Interaction,
+  config: AppConfig
+): Promise<boolean> {
+  if (
+    !interaction.guildId ||
+    guildAccessService.isGuildAllowed(interaction.guildId, config.discord.allowedGuildIds)
+  ) {
+    return true;
+  }
+
+  logger.warn("Ignored interaction from unauthorized guild.", {
+    commandName: getInteractionFailureLogContext(interaction).commandName,
+    commandType: getInteractionFailureLogContext(interaction).commandType,
+    guildId: interaction.guildId,
+    userId: interaction.user.id
+  });
+
+  if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+    await interaction.reply({
+      content: "Este servidor nao esta autorizado a usar a Aurora.",
+      ephemeral: true
+    });
+  }
+
+  return false;
 }
 
 async function replyWithGenericInteractionError(interaction: Interaction): Promise<void> {

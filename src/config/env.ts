@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import { DEFAULT_PREFIX } from "./constants";
+import { DEFAULT_ACTION_COOLDOWN_SECONDS } from "./guildDefaults";
 
 export type AppEnvironment = "development" | "test" | "production";
 export type GifProvider = "giphy";
@@ -11,9 +12,11 @@ export interface AppConfig {
     token: string;
     clientId: string;
     devGuildId?: string;
+    allowedGuildIds: string[];
   };
   databaseUrl: string;
   defaultPrefix: string;
+  actionCooldownSeconds: number;
   gifs: {
     provider: GifProvider;
     giphyApiKey?: string;
@@ -38,10 +41,16 @@ export function loadConfig(): AppConfig {
     discord: {
       token: reader.requiredString("DISCORD_TOKEN"),
       clientId: reader.requiredString("DISCORD_CLIENT_ID"),
-      devGuildId: reader.optionalString("DISCORD_DEV_GUILD_ID")
+      devGuildId: reader.optionalString("DISCORD_DEV_GUILD_ID"),
+      allowedGuildIds: reader.stringList("DISCORD_ALLOWED_GUILD_IDS")
     },
     databaseUrl: reader.requiredString("DATABASE_URL"),
     defaultPrefix: reader.string("DEFAULT_PREFIX", DEFAULT_PREFIX),
+    actionCooldownSeconds: reader.integer(
+      "ACTION_COOLDOWN_SECONDS",
+      DEFAULT_ACTION_COOLDOWN_SECONDS,
+      { min: 0, max: 3600 }
+    ),
     gifs: {
       provider: reader.enumValue("GIF_PROVIDER", ["giphy"], "giphy"),
       giphyApiKey: reader.optionalString("GIPHY_API_KEY"),
@@ -156,6 +165,18 @@ function createEnvReader(source: NodeJS.ProcessEnv) {
     },
     string(name: string, fallback: string): string {
       return read(name) ?? fallback;
+    },
+    stringList(name: string): string[] {
+      const value = read(name);
+
+      if (!value) {
+        return [];
+      }
+
+      return value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
     },
     number(name: string, fallback: number, options?: NumberOptions): number {
       return parseNumber(name, fallback, options);

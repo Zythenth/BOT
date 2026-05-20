@@ -1,6 +1,7 @@
+import type { Prisma } from "@prisma/client";
 import type { PrismaClientInstance } from "../prisma";
 
-export type RepositoryClient = PrismaClientInstance;
+export type RepositoryClient = PrismaClientInstance | Prisma.TransactionClient;
 
 export const GIF_STATUSES = [
   "pending",

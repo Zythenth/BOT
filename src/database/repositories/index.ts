@@ -4,6 +4,7 @@ export * from "./aliasRepository";
 export * from "./blockRepository";
 export * from "./buttonInteractionStateRepository";
 export * from "./gifRepository";
+export * from "./giphyQuotaRepository";
 export * from "./guildRepository";
 export * from "./interactionRepository";
 export * from "./phraseRepository";

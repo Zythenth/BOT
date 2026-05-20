@@ -196,7 +196,7 @@ function createFakeProvider(options: {
       buildTransientMediaUrl(providerGifId) {
         return `https://media.example/${providerGifId}.gif`;
       },
-      getQuotaSnapshot() {
+      async getQuotaSnapshot() {
         return {
           limit: 100,
           used: options.canUseApi ? 1 : 100,
@@ -204,7 +204,7 @@ function createFakeProvider(options: {
           resetAt: new Date("2026-05-20T13:00:00.000Z")
         };
       },
-      canUseApi() {
+      async canUseApi() {
         return options.canUseApi;
       }
     }

@@ -206,3 +206,17 @@ model ButtonInteractionState {
   @@index([guildId, action])
   @@index([expiresAt])
 }
+
+model GiphyQuotaWindow {
+  id              String   @id @default(cuid())
+  provider        String
+  windowStartedAt DateTime
+  windowEndsAt    DateTime
+  used            Int      @default(0)
+  limit           Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([provider, windowStartedAt])
+  @@index([provider, windowEndsAt])
+}

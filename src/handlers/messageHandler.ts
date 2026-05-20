@@ -1,7 +1,7 @@
 import { Events, type Client } from "discord.js";
 import type { AppConfig } from "../config";
-import { parsePrefixCommand, prefixCommands } from "../commands";
-import { aliasService, prefixService } from "../services";
+import { parseBotMentionPrefixCommand, parsePrefixCommand, prefixCommands } from "../commands";
+import { aliasService, guildAccessService, prefixService } from "../services";
 import { logger } from "../utils";
 
 export function registerMessageHandler(client: Client, config: AppConfig): void {
@@ -10,8 +10,14 @@ export function registerMessageHandler(client: Client, config: AppConfig): void 
       return;
     }
 
+    if (!guildAccessService.isGuildAllowed(message.guild.id, config.discord.allowedGuildIds)) {
+      return;
+    }
+
     const prefix = await getGuildPrefix(message.guild.id, config.defaultPrefix);
-    const parsedCommand = parsePrefixCommand(message.content, prefix);
+    const parsedCommand =
+      parsePrefixCommand(message.content, prefix) ??
+      parseBotMentionPrefixCommand(message.content, client.user?.id);
 
     if (!parsedCommand) {
       return;
@@ -33,7 +39,7 @@ export function registerMessageHandler(client: Client, config: AppConfig): void 
     }
 
     const logContext = {
-      commandName: `${prefix}${resolvedCommandName}`,
+      commandName: `${parsedCommand.prefixUsed}${resolvedCommandName}`,
       commandType: "prefix" as const,
       guildId: message.guild.id,
       userId: message.author.id
@@ -45,7 +51,7 @@ export function registerMessageHandler(client: Client, config: AppConfig): void 
         message,
         args: parsedCommand.args,
         commandName: resolvedCommandName,
-        prefix,
+        prefix: parsedCommand.prefixUsed,
         rawArgs: parsedCommand.rawArgs
       });
     } catch (error) {

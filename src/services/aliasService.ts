@@ -71,6 +71,13 @@ export function createAliasService(repository: AliasRepositoryLike = aliasReposi
 
 export const aliasService = createAliasService();
 
+export function listBuiltInAliases(): Array<{ alias: string; commandName: string }> {
+  return Object.entries(BUILT_IN_ALIASES).map(([alias, commandName]) => ({
+    alias,
+    commandName
+  }));
+}
+
 export function normalizeAlias(value: string): string {
   return value
     .trim()

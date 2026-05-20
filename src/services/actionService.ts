@@ -14,6 +14,7 @@ import {
   fallbackActionPhrase,
   type RequiredActionPayloadContext
 } from "./actionPayloadBuilder";
+import { actionCooldownService } from "./actionCooldownService";
 import { failAction, validateBaseActionContext } from "./actionValidation";
 import { affinityService } from "./affinityService";
 import { blockService } from "./blockService";
@@ -139,8 +140,10 @@ const defaultActionServiceDependencies: ActionServiceDependencies = {
     return null;
   },
 
-  async validateCooldown() {
-    return null;
+  async validateCooldown(context) {
+    return actionCooldownService.validate(context, {
+      enabled: true
+    });
   },
 
   async selectPhrase(context) {

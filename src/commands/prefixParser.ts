@@ -2,6 +2,7 @@ export interface ParsedPrefixCommand {
   commandName: string;
   args: string[];
   rawArgs: string;
+  prefixUsed: string;
 }
 
 export function parsePrefixCommand(content: string, prefix: string): ParsedPrefixCommand | null {
@@ -9,7 +10,36 @@ export function parsePrefixCommand(content: string, prefix: string): ParsedPrefi
     return null;
   }
 
-  const body = content.slice(prefix.length).trim();
+  return parseCommandBody(content.slice(prefix.length), prefix);
+}
+
+export function parseBotMentionPrefixCommand(
+  content: string,
+  botUserId: string | undefined
+): ParsedPrefixCommand | null {
+  if (!botUserId) {
+    return null;
+  }
+
+  for (const mentionPrefix of [`<@${botUserId}>`, `<@!${botUserId}>`]) {
+    if (!content.startsWith(mentionPrefix)) {
+      continue;
+    }
+
+    const remainder = content.slice(mentionPrefix.length);
+
+    if (remainder && !/^\s/.test(remainder)) {
+      return null;
+    }
+
+    return parseCommandBody(remainder, `${mentionPrefix} `);
+  }
+
+  return null;
+}
+
+function parseCommandBody(rawBody: string, prefixUsed: string): ParsedPrefixCommand | null {
+  const body = rawBody.trim();
 
   if (!body) {
     return null;
@@ -26,6 +56,7 @@ export function parsePrefixCommand(content: string, prefix: string): ParsedPrefi
   return {
     commandName: rawCommandName.toLowerCase(),
     args: rawArgs ? rawArgs.split(/\s+/) : [],
-    rawArgs
+    rawArgs,
+    prefixUsed
   };
 }
