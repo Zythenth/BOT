@@ -15,6 +15,8 @@ test("aliasService resolve alias interno para comando canonico", async () => {
 test("aliasService resolve aliases obrigatorios do MVP", async () => {
   const service = createAliasService(emptyAliasRepository());
 
+  assert.equal(await service.resolveCommandName("guild-1", "kiss"), "kiss");
+  assert.equal(await service.resolveCommandName("guild-1", "selinho"), "kiss");
   assert.equal(await service.resolveCommandName("guild-1", "abra\u00E7ar"), "hug");
   assert.equal(await service.resolveCommandName("guild-1", "foreheadkiss"), "beijotesta");
   assert.equal(await service.resolveCommandName("guild-1", "bjt"), "beijotesta");

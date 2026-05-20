@@ -2,7 +2,7 @@
 
 Bot privado de Discord para a Aurora, focado em interacoes RP leves, afinidade por servidor, GIFs moderados e controles de privacidade.
 
-O objetivo do projeto e permitir comandos como abraco, cafune, consolo, protecao e brincadeiras leves, sempre com arquitetura modular: comandos apenas adaptam entrada/saida, enquanto services concentram a regra de negocio.
+O objetivo do projeto e permitir comandos como kiss, abraco, cafune, consolo, protecao e brincadeiras leves, sempre com arquitetura modular: comandos apenas adaptam entrada/saida, enquanto services concentram a regra de negocio.
 
 ## Stack
 
@@ -206,6 +206,7 @@ Ate la, rode em producao com Node.js diretamente ou prepare o Dockerfile em uma 
 
 Slash e prefixo:
 
+- `/kiss` e `-kiss`
 - `/hug` e `-hug`
 - `/beijotesta` e `-beijotesta`
 - `/beijobochecha` e `-beijobochecha`

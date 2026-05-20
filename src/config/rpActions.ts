@@ -9,6 +9,12 @@ export interface RpActionDefinition {
 
 export const RP_ACTION_DEFINITIONS: readonly RpActionDefinition[] = [
   {
+    action: "kiss",
+    category: "romance_leve",
+    commandName: "kiss",
+    description: "Dar um selinho romantico leve em outro usuario."
+  },
+  {
     action: "hug",
     category: "carinho_fofo",
     commandName: "hug",
@@ -59,6 +65,7 @@ export const RP_ACTION_DEFINITIONS: readonly RpActionDefinition[] = [
 ];
 
 export const RP_ACTION_STATS_LABELS: Record<string, string> = {
+  kiss: "Selinhos",
   hug: "Abracos",
   beijotesta: "Beijos na testa",
   beijobochecha: "Beijos na bochecha",

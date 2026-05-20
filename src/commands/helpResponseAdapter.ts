@@ -11,6 +11,10 @@ export function buildHelpEmbed(prefix = "-"): EmbedBuilder {
         value: formatCommandsByCategory("carinho_fofo", prefix)
       },
       {
+        name: "Romance",
+        value: formatCommandsByCategory("romance_leve", prefix)
+      },
+      {
         name: "Apoio",
         value: formatCommandsByCategory("apoio_emocional", prefix)
       },

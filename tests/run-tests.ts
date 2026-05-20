@@ -7,3 +7,4 @@ import "./unit/cooldownService.test";
 import "./unit/gifRatioService.test";
 import "./unit/gifService.test";
 import "./unit/phraseService.test";
+import "./unit/retributeService.test";

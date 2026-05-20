@@ -1,4 +1,11 @@
 {
+  "kiss": [
+    "{autor} deu um selinho leve em {alvo}.",
+    "{autor} ofereceu um beijo romantico e delicado para {alvo}.",
+    "{autor} se aproximou de {alvo} para um selinho fofo.",
+    "{autor} deixou um beijo carinhoso nos labios de {alvo}.",
+    "{autor} deu em {alvo} um selinho calmo e cuidadoso."
+  ],
   "hug": [
     "{autor} abracou {alvo} com cuidado.",
     "{autor} ofereceu um abraco quentinho para {alvo}.",

@@ -53,6 +53,23 @@ test("affinityService concede pontos da categoria quando limites permitem", asyn
   assert.equal(result.scoreReason, "awarded");
 });
 
+test("affinityService aplica +3 para kiss como romance leve", async () => {
+  const service = createAffinityService(defaultAffinityServiceConfig, fakeAffinityDependencies());
+  const result = await service.applyAction({
+    guildId: "guild-1",
+    actorUserId: "actor",
+    targetUserId: "target",
+    action: "kiss",
+    category: "romance_leve",
+    source: "slash",
+    occurredAt: new Date("2026-05-20T12:00:00.000Z")
+  });
+
+  assert.equal(result.pointsAwarded, 3);
+  assert.equal(result.totalPoints, 3);
+  assert.equal(result.scoreReason, "awarded");
+});
+
 function fakeAffinityDependencies(options: {
   optedOutUsers?: string[];
   initialPoints?: number;

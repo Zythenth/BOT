@@ -17,6 +17,8 @@ export interface AliasService {
 const BUILT_IN_ALIASES: Record<string, string> = {
   abraco: "hug",
   abracar: "hug",
+  kiss: "kiss",
+  selinho: "kiss",
   beijonatesta: "beijotesta",
   bjt: "beijotesta",
   foreheadkiss: "beijotesta",

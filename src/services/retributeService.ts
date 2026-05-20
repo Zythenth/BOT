@@ -6,6 +6,12 @@ import { failAction } from "./actionValidation";
 
 const RETRIBUTE_BUTTON_PREFIX = "rp:retribute:";
 const RETRIBUTE_BUTTON_TTL_MS = 15 * 60 * 1000;
+const RETRIBUTE_SENDER_MESSAGE =
+  "Ei, esse botão é para quem recebeu o carinho retribuir você. Deixa a outra pessoa decidir, tá? 💛";
+const RETRIBUTE_OTHER_USER_MESSAGE =
+  "Ei! Esse carinho não era pra você retribuir. Só quem recebeu pode apertar esse botão. 😤";
+const RETRIBUTE_EXPIRED_MESSAGE =
+  "Ops, esse carinho já se perdeu no tempo. Melhor mandar outro novinho. 💫";
 
 export function isRetributeButtonCustomId(customId: string): boolean {
   return customId.startsWith(RETRIBUTE_BUTTON_PREFIX);
@@ -16,19 +22,23 @@ export const retributeService = {
     const parsed = parseRetributeCustomId(interaction.customId);
 
     if (!parsed) {
-      return failAction("unknown_error", "Nao consegui identificar esta retribuicao.");
+      return failAction("expired", RETRIBUTE_EXPIRED_MESSAGE);
     }
 
     if (interaction.guildId !== parsed.guildId) {
-      return failAction("dm_not_allowed", "Esta retribuicao so pode ser usada no servidor original.");
-    }
-
-    if (interaction.user.id !== parsed.originalTargetUserId) {
-      return failAction("blocked", "So quem recebeu essa acao pode retribuir.");
+      return failAction("expired", RETRIBUTE_EXPIRED_MESSAGE);
     }
 
     if (isExpired(parsed.createdAt, new Date())) {
-      return failAction("expired", "Esse botao expirou. Use o comando de novo.");
+      return failAction("expired", RETRIBUTE_EXPIRED_MESSAGE);
+    }
+
+    if (interaction.user.id === parsed.originalActorUserId) {
+      return failAction("blocked", RETRIBUTE_SENDER_MESSAGE);
+    }
+
+    if (interaction.user.id !== parsed.originalTargetUserId) {
+      return failAction("blocked", RETRIBUTE_OTHER_USER_MESSAGE);
     }
 
     const definition = getRpActionDefinition(parsed.action);
@@ -52,7 +62,7 @@ interface ParsedRetributeCustomId {
   guildId: string;
   originalActorUserId: string;
   originalTargetUserId: string;
-  createdAt?: Date;
+  createdAt: Date;
 }
 
 function parseRetributeCustomId(customId: string): ParsedRetributeCustomId | null {
@@ -65,8 +75,15 @@ function parseRetributeCustomId(customId: string): ParsedRetributeCustomId | nul
     !action ||
     !guildId ||
     !originalActorUserId ||
-    !originalTargetUserId
+    !originalTargetUserId ||
+    !timestamp
   ) {
+    return null;
+  }
+
+  const createdAt = parseBase36Timestamp(timestamp);
+
+  if (!createdAt) {
     return null;
   }
 
@@ -75,28 +92,27 @@ function parseRetributeCustomId(customId: string): ParsedRetributeCustomId | nul
     guildId,
     originalActorUserId,
     originalTargetUserId,
-    createdAt: parseBase36Timestamp(timestamp)
+    createdAt
   };
 }
 
 function parseBase36Timestamp(value: string | undefined): Date | undefined {
-  if (!value) {
+  if (!value || !/^[0-9a-z]+$/i.test(value)) {
     return undefined;
   }
 
   const timestamp = Number.parseInt(value, 36);
 
-  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+  if (!Number.isSafeInteger(timestamp) || timestamp <= 0) {
     return undefined;
   }
 
-  return new Date(timestamp);
+  const createdAt = new Date(timestamp);
+  return Number.isNaN(createdAt.getTime()) ? undefined : createdAt;
 }
 
-function isExpired(createdAt: Date | undefined, now: Date): boolean {
-  return createdAt
-    ? now.getTime() - createdAt.getTime() > RETRIBUTE_BUTTON_TTL_MS
-    : false;
+function isExpired(createdAt: Date, now: Date): boolean {
+  return now.getTime() - createdAt.getTime() > RETRIBUTE_BUTTON_TTL_MS;
 }
 
 function buildRetributeContext(
