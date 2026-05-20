@@ -17,6 +17,7 @@ export * from "./guildAccessService";
 export * from "./guildConfigService";
 export * from "./phraseModerationService";
 export * from "./phraseService";
+export * from "./personalDataService";
 export * from "./prefixService";
 export * from "./preferenceService";
 export * from "./rankingService";

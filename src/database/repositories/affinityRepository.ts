@@ -166,5 +166,44 @@ export const affinityRepository = {
       take: options.take,
       skip: options.skip
     });
+  },
+
+  listForUser(userId: string, db: RepositoryClient = prisma) {
+    return db.affinityPair.findMany({
+      where: buildUserWhere(userId),
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        guildId: true,
+        userAId: true,
+        userBId: true,
+        points: true,
+        interactionCount: true,
+        lastInteractionAt: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+  },
+
+  countForUser(userId: string, db: RepositoryClient = prisma) {
+    return db.affinityPair.count({
+      where: buildUserWhere(userId)
+    });
+  },
+
+  deleteForUser(userId: string, db: RepositoryClient = prisma) {
+    return db.affinityPair.deleteMany({
+      where: buildUserWhere(userId)
+    });
   }
 };
+
+function buildUserWhere(userId: string): Prisma.AffinityPairWhereInput {
+  return {
+    OR: [
+      { userAId: userId },
+      { userBId: userId }
+    ]
+  };
+}

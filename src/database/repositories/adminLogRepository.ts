@@ -44,5 +44,13 @@ export const adminLogRepository = {
       take: filters.take ?? DEFAULT_LIST_TAKE,
       skip: filters.skip
     });
+  },
+
+  countForActor(actorUserId: string, db: RepositoryClient = prisma) {
+    return db.adminLog.count({
+      where: {
+        actorUserId
+      }
+    });
   }
 };

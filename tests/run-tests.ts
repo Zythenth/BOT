@@ -9,6 +9,7 @@ import "./unit/gifRatioService.test";
 import "./unit/gifService.test";
 import "./unit/giphyProviderService.test";
 import "./unit/guildAccessService.test";
+import "./unit/personalDataService.test";
 import "./unit/phraseService.test";
 import "./unit/prefixParser.test";
 import "./unit/retributeService.test";

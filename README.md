@@ -268,6 +268,9 @@ Privacidade:
 - `/preferencias`
 - `/optout`
 - `/optin`
+- `/meusdados`
+- `/exportardados`
+- `/apagardados`
 
 Administracao de GIFs:
 
@@ -330,6 +333,10 @@ Se a cota GIPHY acabar, o bot usa apenas GIFs `approved` do banco. Se nao houver
 ## Privacidade
 
 Usuarios podem bloquear interacoes recebidas, bloquear categorias, bloquear romance/brincadeiras, ocultar ranking e sair do sistema de afinidade com `/optout`.
+
+Usuarios tambem podem ver um resumo privado com `/meusdados`, exportar os proprios dados em JSON privado com `/exportardados` e apagar os proprios dados de RP com `/apagardados confirmacao:APAGAR`.
+
+O apagamento remove interacoes RP, pares de afinidade, bloqueios criados pelo usuario e estados temporarios de botoes ligados ao usuario. Bloqueios criados por outras pessoas nao sao removidos. Para manter a escolha de privacidade, a Aurora preserva uma preferencia minima de opt-out/ranking oculto. `AdminLog` administrativo e retido como trilha minima e nao e exportado em detalhes.
 
 Interacoes bloqueadas nao devem enviar RP nem pontuar afinidade. O botao Retribuir passa pela mesma regra do `actionService`, entao tambem respeita bloqueios, cooldown, consentimento e opt-out.
 

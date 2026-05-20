@@ -32,6 +32,12 @@ test("/rp agrupado existe sem remover slash diretos", () => {
   assert.ok(slashCommands.has("kiss"));
 });
 
+test("comandos de dados proprios existem", () => {
+  assert.ok(slashCommands.has("meusdados"));
+  assert.ok(slashCommands.has("exportardados"));
+  assert.ok(slashCommands.has("apagardados"));
+});
+
 test("dados base mantem kiss separado dos beijos de testa e bochecha", () => {
   const phrases = readJson<Record<string, string[]>>("data/phrases.json");
   const searchTerms = readJson<Record<string, string[]>>("data/giphy-search-terms.json");

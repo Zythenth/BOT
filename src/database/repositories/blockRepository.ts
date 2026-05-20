@@ -89,6 +89,34 @@ export const blockRepository = {
     });
   },
 
+  listForUser(userId: string, db: RepositoryClient = prisma) {
+    return db.block.findMany({
+      where: buildUserWhere(userId),
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        guildId: true,
+        blockerUserId: true,
+        blockedUserId: true,
+        category: true,
+        action: true,
+        createdAt: true
+      }
+    });
+  },
+
+  countForUser(userId: string, db: RepositoryClient = prisma) {
+    return db.block.count({
+      where: buildUserWhere(userId)
+    });
+  },
+
+  deleteForUser(userId: string, db: RepositoryClient = prisma) {
+    return db.block.deleteMany({
+      where: buildUserWhere(userId)
+    });
+  },
+
   findExact(filters: ExactBlockFilters, db: RepositoryClient = prisma) {
     return db.block.findFirst({
       where: buildExactWhere(filters)
@@ -124,5 +152,11 @@ function buildExactWhere(filters: ExactBlockFilters): Prisma.BlockWhereInput {
     blockedUserId: filters.blockedUserId ?? null,
     category: filters.category ?? null,
     action: filters.action ?? null
+  };
+}
+
+function buildUserWhere(userId: string): Prisma.BlockWhereInput {
+  return {
+    blockerUserId: userId
   };
 }

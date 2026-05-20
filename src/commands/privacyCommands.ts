@@ -1,20 +1,28 @@
 import {
+  AttachmentBuilder,
   SlashCommandBuilder,
   type ChatInputCommandInteraction
 } from "discord.js";
 import {
   blockService,
+  personalDataService,
   preferenceService,
   type PrivacyBlockCategory
 } from "../services";
 import type { SlashCommandDefinition } from "../types";
-import { buildPreferencesEmbed } from "./privacyResponseAdapter";
+import {
+  buildPersonalDataEraseEmbed,
+  buildPersonalDataSummaryEmbed,
+  buildPreferencesEmbed
+} from "./privacyResponseAdapter";
 
 const USER_OPTION_NAME = "usuario";
 const CATEGORY_OPTION_NAME = "categoria";
 const BLOCK_OPTION_NAME = "bloquear";
 const ALLOW_ROMANCE_OPTION_NAME = "permitir_romance";
 const HIDE_RANKING_OPTION_NAME = "ocultar_ranking";
+const ERASE_CONFIRMATION_OPTION_NAME = "confirmacao";
+const ERASE_CONFIRMATION_TEXT = "APAGAR";
 
 export const privacySlashCommands: SlashCommandDefinition[] = [
   createBlockRpCommand(),
@@ -22,7 +30,10 @@ export const privacySlashCommands: SlashCommandDefinition[] = [
   createBlockCategoryCommand(),
   createPreferencesCommand(),
   createOptOutCommand(),
-  createOptInCommand()
+  createOptInCommand(),
+  createPersonalDataCommand(),
+  createExportDataCommand(),
+  createEraseDataCommand()
 ];
 
 function createBlockRpCommand(): SlashCommandDefinition {
@@ -223,6 +234,105 @@ function createOptInCommand(): SlashCommandDefinition {
       await preferenceService.optIn(interaction.user.id);
       await interaction.reply({
         content: "Opt-in ativado. Voce voltou ao sistema de afinidade e ranking.",
+        ephemeral: true
+      });
+    }
+  };
+}
+
+function createPersonalDataCommand(): SlashCommandDefinition {
+  return {
+    name: "meusdados",
+    description: "Mostra um resumo privado dos seus dados salvos.",
+    data: new SlashCommandBuilder()
+      .setName("meusdados")
+      .setDescription("Mostra um resumo privado dos seus dados salvos.")
+      .setDMPermission(false),
+    async execute(interaction) {
+      const guildId = await requireGuildId(interaction);
+
+      if (!guildId) {
+        return;
+      }
+
+      const summary = await personalDataService.getSummary(interaction.user.id);
+
+      await interaction.reply({
+        embeds: [buildPersonalDataSummaryEmbed(summary)],
+        ephemeral: true
+      });
+    }
+  };
+}
+
+function createExportDataCommand(): SlashCommandDefinition {
+  return {
+    name: "exportardados",
+    description: "Exporta seus dados pessoais da Aurora em JSON privado.",
+    data: new SlashCommandBuilder()
+      .setName("exportardados")
+      .setDescription("Exporta seus dados pessoais da Aurora em JSON privado.")
+      .setDMPermission(false),
+    async execute(interaction) {
+      const guildId = await requireGuildId(interaction);
+
+      if (!guildId) {
+        return;
+      }
+
+      const data = await personalDataService.exportUserData(interaction.user.id);
+      const attachment = new AttachmentBuilder(
+        Buffer.from(JSON.stringify(data, null, 2), "utf8"),
+        { name: "aurora-meus-dados.json" }
+      );
+
+      await interaction.reply({
+        content: "Aqui esta sua exportacao privada de dados da Aurora.",
+        files: [attachment],
+        ephemeral: true
+      });
+    }
+  };
+}
+
+function createEraseDataCommand(): SlashCommandDefinition {
+  return {
+    name: "apagardados",
+    description: "Apaga seus dados pessoais de RP salvos pela Aurora.",
+    data: new SlashCommandBuilder()
+      .setName("apagardados")
+      .setDescription("Apaga seus dados pessoais de RP salvos pela Aurora.")
+      .setDMPermission(false)
+      .addStringOption((option) =>
+        option
+          .setName(ERASE_CONFIRMATION_OPTION_NAME)
+          .setDescription(`Digite ${ERASE_CONFIRMATION_TEXT} para confirmar.`)
+          .setRequired(true)
+      ),
+    async execute(interaction) {
+      const guildId = await requireGuildId(interaction);
+
+      if (!guildId) {
+        return;
+      }
+
+      const confirmation = interaction.options.getString(
+        ERASE_CONFIRMATION_OPTION_NAME,
+        true
+      );
+
+      if (confirmation !== ERASE_CONFIRMATION_TEXT) {
+        await interaction.reply({
+          content: `Apagamento cancelado. Para confirmar, digite ${ERASE_CONFIRMATION_TEXT}.`,
+          ephemeral: true
+        });
+        return;
+      }
+
+      const result = await personalDataService.eraseOwnData(interaction.user.id);
+
+      await interaction.reply({
+        embeds: [buildPersonalDataEraseEmbed(result)],
         ephemeral: true
       });
     }

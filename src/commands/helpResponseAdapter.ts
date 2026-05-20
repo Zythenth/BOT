@@ -33,7 +33,7 @@ export function buildHelpEmbed(prefix = "-"): EmbedBuilder {
       {
         name: "Privacidade",
         value:
-          "`/bloquearrp`, `/desbloquearrp`, `/bloquearcategoria`, `/preferencias`, `/optout`, `/optin`"
+          "`/bloquearrp`, `/desbloquearrp`, `/bloquearcategoria`, `/preferencias`, `/optout`, `/optin`, `/meusdados`, `/exportardados`, `/apagardados`"
       },
       {
         name: "Admin GIFs",

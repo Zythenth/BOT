@@ -15,6 +15,35 @@ export const buttonInteractionStateRepository = {
     });
   },
 
+  listForUser(userId: string, db: RepositoryClient = prisma) {
+    return db.buttonInteractionState.findMany({
+      where: buildUserWhere(userId),
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        guildId: true,
+        action: true,
+        originalAuthorId: true,
+        originalTargetId: true,
+        expiresAt: true,
+        usedAt: true,
+        createdAt: true
+      }
+    });
+  },
+
+  countForUser(userId: string, db: RepositoryClient = prisma) {
+    return db.buttonInteractionState.count({
+      where: buildUserWhere(userId)
+    });
+  },
+
+  deleteForUser(userId: string, db: RepositoryClient = prisma) {
+    return db.buttonInteractionState.deleteMany({
+      where: buildUserWhere(userId)
+    });
+  },
+
   markUsed(customId: string, usedAt = new Date(), db: RepositoryClient = prisma) {
     return db.buttonInteractionState.update({
       where: { customId },
@@ -32,3 +61,12 @@ export const buttonInteractionStateRepository = {
     });
   }
 };
+
+function buildUserWhere(userId: string): Prisma.ButtonInteractionStateWhereInput {
+  return {
+    OR: [
+      { originalAuthorId: userId },
+      { originalTargetId: userId }
+    ]
+  };
+}

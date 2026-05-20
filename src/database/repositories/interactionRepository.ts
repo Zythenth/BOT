@@ -86,6 +86,36 @@ export const interactionRepository = {
     });
   },
 
+  listForUser(userId: string, db: RepositoryClient = prisma) {
+    return db.interaction.findMany({
+      where: buildUserWhere(userId),
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        guildId: true,
+        actorUserId: true,
+        targetUserId: true,
+        action: true,
+        category: true,
+        source: true,
+        pointsAwarded: true,
+        createdAt: true
+      }
+    });
+  },
+
+  countForUser(userId: string, db: RepositoryClient = prisma) {
+    return db.interaction.count({
+      where: buildUserWhere(userId)
+    });
+  },
+
+  deleteForUser(userId: string, db: RepositoryClient = prisma) {
+    return db.interaction.deleteMany({
+      where: buildUserWhere(userId)
+    });
+  },
+
   findLatestScoredForPairAction(
     filters: ScoredPairActionFilters,
     db: RepositoryClient = prisma
@@ -234,3 +264,12 @@ export const interactionRepository = {
     }));
   }
 };
+
+function buildUserWhere(userId: string): Prisma.InteractionWhereInput {
+  return {
+    OR: [
+      { actorUserId: userId },
+      { targetUserId: userId }
+    ]
+  };
+}
