@@ -8,6 +8,8 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
+    "test": "tsx --test tests/run-tests.ts",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit",
     "lint": "node -e \"console.log('Lint ainda nao configurado nesta etapa.')\"",
     "prisma": "prisma",
     "prisma:generate": "prisma generate",

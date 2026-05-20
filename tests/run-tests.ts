@@ -1,0 +1,9 @@
+import "./unit/actionService.test";
+import "./unit/affinityService.test";
+import "./unit/aliasService.test";
+import "./unit/blockService.test";
+import "./unit/commandsStructure.test";
+import "./unit/cooldownService.test";
+import "./unit/gifRatioService.test";
+import "./unit/gifService.test";
+import "./unit/phraseService.test";
