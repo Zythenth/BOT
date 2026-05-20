@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { gifRepository } from "../database";
+import { gifRepository, type GifStatus } from "../database";
 import type { ActionCategory, ActionGifSelection, ActionName } from "../types";
 import {
   giphyProviderService,
@@ -26,13 +26,52 @@ export interface GifService {
   markGifUsed(gifId: string, usedAt?: Date): Promise<void>;
 }
 
+export interface StoredGifLike {
+  id: string;
+  guildId: string;
+  provider: string;
+  providerGifId: string;
+  action: string;
+  category: string;
+  status: GifStatus;
+}
+
+export interface CreateImportedGifInput {
+  guildId: string;
+  provider: string;
+  providerGifId: string;
+  action: ActionName;
+  category: ActionCategory;
+  status: string;
+  rating?: string;
+  searchTerm?: string;
+  giphyPageUrl?: string;
+  addedBy?: string;
+}
+
+export interface GifStorage {
+  listApproved(request: GifSelectionRequest): Promise<StoredGifLike[]>;
+  findByProviderGifId(provider: string, providerGifId: string): Promise<StoredGifLike | null>;
+  createImportedGif(input: CreateImportedGifInput): Promise<StoredGifLike>;
+  updateGiphyMetadata(
+    id: string,
+    data: {
+      rating?: string;
+      giphyPageUrl?: string;
+      searchTerm?: string;
+    }
+  ): Promise<StoredGifLike>;
+  incrementUsage(gifId: string, usedAt: Date): Promise<void>;
+}
+
 type SearchTermsByAction = Record<string, string[]>;
 
 export function createGifService(
   config: GifServiceConfig = readGifServiceConfigFromEnv(),
   provider: GiphyProviderService = giphyProviderService,
   ratioService: GifRatioService = gifRatioService,
-  searchTerms: SearchTermsByAction = loadSearchTerms()
+  searchTerms: SearchTermsByAction = loadSearchTerms(),
+  storage: GifStorage = defaultGifStorage
 ): GifService {
   return {
     async chooseGif(request) {
@@ -53,7 +92,7 @@ export function createGifService(
       );
 
       if (decision.selectedSource === "database") {
-        const approvedGif = await pickApprovedGif(request, provider);
+        const approvedGif = await pickApprovedGif(request, provider, storage);
 
         if (approvedGif || !provider.canUseApi()) {
           return approvedGif;
@@ -63,7 +102,7 @@ export function createGifService(
       const searchTerm = pickSearchTerm(searchTerms, request.action);
 
       if (!searchTerm || !provider.canUseApi()) {
-        return pickApprovedGif(request, provider);
+        return pickApprovedGif(request, provider, storage);
       }
 
       const result = await provider.search({
@@ -72,7 +111,7 @@ export function createGifService(
       });
 
       if (result.status !== "ok") {
-        return pickApprovedGif(request, provider);
+        return pickApprovedGif(request, provider, storage);
       }
 
       const giphyGif = pickRandom(result.gifs);
@@ -86,10 +125,10 @@ export function createGifService(
         giphyGif,
         searchTerm,
         allowUncategorizedGifs: config.allowUncategorizedGifs
-      });
+      }, storage);
 
       if (!canUseStoredGif(storedGif, request, config.allowUncategorizedGifs)) {
-        return pickApprovedGif(request, provider);
+        return pickApprovedGif(request, provider, storage);
       }
 
       return {
@@ -101,7 +140,7 @@ export function createGifService(
     },
 
     async markGifUsed(gifId, usedAt = new Date()) {
-      await gifRepository.incrementUsage(gifId, usedAt);
+      await storage.incrementUsage(gifId, usedAt);
     }
   };
 }
@@ -117,16 +156,10 @@ export function readGifServiceConfigFromEnv(): GifServiceConfig {
 
 async function pickApprovedGif(
   request: GifSelectionRequest,
-  provider: GiphyProviderService
+  provider: GiphyProviderService,
+  storage: GifStorage
 ): Promise<ActionGifSelection | undefined> {
-  const approvedGifs = await gifRepository.list({
-    guildId: request.guildId,
-    action: request.action,
-    category: request.category,
-    status: "approved",
-    provider: "giphy",
-    take: 25
-  });
+  const approvedGifs = await storage.listApproved(request);
   const gif = pickRandom(approvedGifs);
 
   if (!gif) {
@@ -136,7 +169,7 @@ async function pickApprovedGif(
   const refreshed = await provider.getById(gif.providerGifId);
 
   if (refreshed.status === "ok" && refreshed.gif) {
-    await gifRepository.updateGiphyMetadata(gif.id, {
+    await storage.updateGiphyMetadata(gif.id, {
       rating: refreshed.gif.rating,
       giphyPageUrl: refreshed.gif.pageUrl
     });
@@ -162,21 +195,21 @@ async function upsertImportedGif(input: {
   giphyGif: GiphyGif;
   searchTerm: string;
   allowUncategorizedGifs: boolean;
-}) {
-  const existingGif = await gifRepository.findByProviderGifId(
+}, storage: GifStorage): Promise<StoredGifLike> {
+  const existingGif = await storage.findByProviderGifId(
     input.giphyGif.provider,
     input.giphyGif.providerGifId
   );
 
   if (existingGif) {
-    return gifRepository.updateGiphyMetadata(existingGif.id, {
+    return storage.updateGiphyMetadata(existingGif.id, {
       rating: input.giphyGif.rating,
       giphyPageUrl: input.giphyGif.pageUrl,
       searchTerm: input.searchTerm
     });
   }
 
-  return gifRepository.createGif({
+  return storage.createImportedGif({
     guildId: input.request.guildId,
     provider: input.giphyGif.provider,
     providerGifId: input.giphyGif.providerGifId,
@@ -189,6 +222,35 @@ async function upsertImportedGif(input: {
     addedBy: input.request.addedBy
   });
 }
+
+const defaultGifStorage: GifStorage = {
+  listApproved(request) {
+    return gifRepository.list({
+      guildId: request.guildId,
+      action: request.action,
+      category: request.category,
+      status: "approved",
+      provider: "giphy",
+      take: 25
+    });
+  },
+
+  findByProviderGifId(provider, providerGifId) {
+    return gifRepository.findByProviderGifId(provider, providerGifId);
+  },
+
+  createImportedGif(input) {
+    return gifRepository.createGif(input);
+  },
+
+  updateGiphyMetadata(id, data) {
+    return gifRepository.updateGiphyMetadata(id, data);
+  },
+
+  async incrementUsage(gifId, usedAt) {
+    await gifRepository.incrementUsage(gifId, usedAt);
+  }
+};
 
 function loadSearchTerms(): SearchTermsByAction {
   const filePath = path.resolve(process.cwd(), "data", "giphy-search-terms.json");

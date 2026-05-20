@@ -45,6 +45,70 @@ export interface AffinityService {
   normalizePair(userOneId: string, userTwoId: string): ReturnType<typeof affinityRepository.normalizePair>;
 }
 
+export interface AffinityPairLike {
+  id: string;
+  points: number;
+}
+
+export interface AffinityRepositoryLike {
+  normalizePair(userOneId: string, userTwoId: string): ReturnType<typeof affinityRepository.normalizePair>;
+  getOrCreatePair(guildId: string, userOneId: string, userTwoId: string): Promise<AffinityPairLike>;
+  recordAction(input: {
+    guildId: string;
+    userOneId: string;
+    userTwoId: string;
+    pointsAwarded: number;
+    interactedAt?: Date;
+  }): Promise<AffinityPairLike>;
+}
+
+export interface AffinityInteractionRepositoryLike {
+  findLatestScoredForPairAction(filters: {
+    guildId: string;
+    affinityPairId: string;
+    action: string;
+    since?: Date;
+  }): Promise<{ createdAt: Date } | null>;
+  findLatestScoredForUser(filters: {
+    guildId: string;
+    userId: string;
+    since?: Date;
+  }): Promise<{ createdAt: Date } | null>;
+  sumScoredPointsForPair(filters: {
+    guildId: string;
+    affinityPairId: string;
+    since?: Date;
+  }): Promise<number>;
+  sumScoredPointsForUser(filters: {
+    guildId: string;
+    userId: string;
+    since?: Date;
+  }): Promise<number>;
+  countScoredInteractionsForUser(filters: {
+    guildId: string;
+    userId: string;
+    since?: Date;
+  }): Promise<number>;
+}
+
+export interface AffinityPreferenceServiceLike {
+  hasOptedOut(userId: string): Promise<boolean>;
+}
+
+export interface AffinityGuildConfigServiceLike {
+  getConfig(guildId: string): Promise<{
+    cooldownEnabled: boolean;
+    cooldownSeconds: number;
+  }>;
+}
+
+export interface AffinityServiceDependencies {
+  affinityRepository: AffinityRepositoryLike;
+  interactionRepository: AffinityInteractionRepositoryLike;
+  preferenceService: AffinityPreferenceServiceLike;
+  guildConfigService: AffinityGuildConfigServiceLike;
+}
+
 export const defaultAffinityServiceConfig: AffinityServiceConfig = {
   maxPoints: DEFAULT_AFFINITY_MAX_POINTS,
   pairDailyPoints: DEFAULT_AFFINITY_PAIR_DAILY_POINTS,
@@ -55,8 +119,16 @@ export const defaultAffinityServiceConfig: AffinityServiceConfig = {
   timeZone: DEFAULT_AFFINITY_TIME_ZONE
 };
 
+const defaultAffinityServiceDependencies: AffinityServiceDependencies = {
+  affinityRepository,
+  interactionRepository,
+  preferenceService,
+  guildConfigService
+};
+
 export function createAffinityService(
-  config: AffinityServiceConfig = defaultAffinityServiceConfig
+  config: AffinityServiceConfig = defaultAffinityServiceConfig,
+  dependencies: AffinityServiceDependencies = defaultAffinityServiceDependencies
 ): AffinityService {
   return {
     async applyAction(input) {
@@ -70,15 +142,15 @@ export function createAffinityService(
       }
 
       const now = input.occurredAt ?? new Date();
-      const guildConfig = await guildConfigService.getConfig(input.guildId);
+      const guildConfig = await dependencies.guildConfigService.getConfig(input.guildId);
       const effectiveConfig: AffinityServiceConfig = {
         ...config,
         userCooldownMs: guildConfig.cooldownSeconds * 1000,
         pairActionCooldownMs: guildConfig.cooldownSeconds * 1000
       };
       const [actorOptedOut, targetOptedOut] = await Promise.all([
-        preferenceService.hasOptedOut(input.actorUserId),
-        preferenceService.hasOptedOut(input.targetUserId)
+        dependencies.preferenceService.hasOptedOut(input.actorUserId),
+        dependencies.preferenceService.hasOptedOut(input.targetUserId)
       ]);
 
       if (actorOptedOut || targetOptedOut) {
@@ -88,7 +160,7 @@ export function createAffinityService(
         };
       }
 
-      const pair = await affinityRepository.getOrCreatePair(
+      const pair = await dependencies.affinityRepository.getOrCreatePair(
         input.guildId,
         input.actorUserId,
         input.targetUserId
@@ -96,7 +168,7 @@ export function createAffinityService(
       const previousMilestone = getAffinityMilestone(pair.points);
 
       if (pair.points >= effectiveConfig.maxPoints) {
-        await affinityRepository.recordAction({
+        await dependencies.affinityRepository.recordAction({
           guildId: input.guildId,
           userOneId: input.actorUserId,
           userTwoId: input.targetUserId,
@@ -117,11 +189,17 @@ export function createAffinityService(
       }
 
       const cooldownResult = guildConfig.cooldownEnabled
-        ? await checkCooldowns(input, pair.id, now, effectiveConfig)
+        ? await checkCooldowns(
+            input,
+            pair.id,
+            now,
+            effectiveConfig,
+            dependencies.interactionRepository
+          )
         : null;
 
       if (cooldownResult) {
-        await affinityRepository.recordAction({
+        await dependencies.affinityRepository.recordAction({
           guildId: input.guildId,
           userOneId: input.actorUserId,
           userTwoId: input.targetUserId,
@@ -141,13 +219,19 @@ export function createAffinityService(
         };
       }
 
-      const dailyAllowance = await calculateDailyAllowance(input, pair.id, now, effectiveConfig);
+      const dailyAllowance = await calculateDailyAllowance(
+        input,
+        pair.id,
+        now,
+        effectiveConfig,
+        dependencies.interactionRepository
+      );
       const maxRemaining = Math.max(0, effectiveConfig.maxPoints - pair.points);
       const pointsAwarded = Math.max(
         0,
         Math.min(basePoints, dailyAllowance.remainingPoints, maxRemaining)
       );
-      const updatedPair = await affinityRepository.recordAction({
+      const updatedPair = await dependencies.affinityRepository.recordAction({
         guildId: input.guildId,
         userOneId: input.actorUserId,
         userTwoId: input.targetUserId,
@@ -179,7 +263,7 @@ export function createAffinityService(
     },
 
     normalizePair(userOneId, userTwoId) {
-      return affinityRepository.normalizePair(userOneId, userTwoId);
+      return dependencies.affinityRepository.normalizePair(userOneId, userTwoId);
     }
   };
 }
@@ -190,23 +274,24 @@ async function checkCooldowns(
   input: ApplyAffinityInput,
   affinityPairId: string,
   now: Date,
-  config: AffinityServiceConfig
+  config: AffinityServiceConfig,
+  repository: AffinityInteractionRepositoryLike
 ): Promise<Date | null> {
   const pairCooldownSince = new Date(now.getTime() - config.pairActionCooldownMs);
   const userCooldownSince = new Date(now.getTime() - config.userCooldownMs);
   const [pairAction, actorGlobal, targetGlobal] = await Promise.all([
-    interactionRepository.findLatestScoredForPairAction({
+    repository.findLatestScoredForPairAction({
       guildId: input.guildId,
       affinityPairId,
       action: input.action,
       since: pairCooldownSince
     }),
-    interactionRepository.findLatestScoredForUser({
+    repository.findLatestScoredForUser({
       guildId: input.guildId,
       userId: input.actorUserId,
       since: userCooldownSince
     }),
-    interactionRepository.findLatestScoredForUser({
+    repository.findLatestScoredForUser({
       guildId: input.guildId,
       userId: input.targetUserId,
       since: userCooldownSince
@@ -237,7 +322,8 @@ async function calculateDailyAllowance(
   input: ApplyAffinityInput,
   affinityPairId: string,
   now: Date,
-  config: AffinityServiceConfig
+  config: AffinityServiceConfig,
+  repository: AffinityInteractionRepositoryLike
 ): Promise<{ remainingPoints: number; limitReached: boolean }> {
   const dayStart = getStartOfDayInTimeZone(now, config.timeZone);
   const [
@@ -247,27 +333,27 @@ async function calculateDailyAllowance(
     actorScoredInteractions,
     targetScoredInteractions
   ] = await Promise.all([
-    interactionRepository.sumScoredPointsForPair({
+    repository.sumScoredPointsForPair({
       guildId: input.guildId,
       affinityPairId,
       since: dayStart
     }),
-    interactionRepository.sumScoredPointsForUser({
+    repository.sumScoredPointsForUser({
       guildId: input.guildId,
       userId: input.actorUserId,
       since: dayStart
     }),
-    interactionRepository.sumScoredPointsForUser({
+    repository.sumScoredPointsForUser({
       guildId: input.guildId,
       userId: input.targetUserId,
       since: dayStart
     }),
-    interactionRepository.countScoredInteractionsForUser({
+    repository.countScoredInteractionsForUser({
       guildId: input.guildId,
       userId: input.actorUserId,
       since: dayStart
     }),
-    interactionRepository.countScoredInteractionsForUser({
+    repository.countScoredInteractionsForUser({
       guildId: input.guildId,
       userId: input.targetUserId,
       since: dayStart

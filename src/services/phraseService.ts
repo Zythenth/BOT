@@ -29,14 +29,25 @@ export interface ListBasePhraseFilters {
   category?: ActionCategory;
 }
 
+export interface PhraseRepositoryLike {
+  list(filters: {
+    guildId: string;
+    action: ActionName;
+    category: ActionCategory;
+    isEnabled: boolean;
+    take: number;
+  }): Promise<Phrase[]>;
+}
+
 type PhrasesFile = Record<string, string[]>;
 
 export function createPhraseService(
-  phrasesFilePath = path.resolve(process.cwd(), "data", "phrases.json")
+  phrasesFilePath = path.resolve(process.cwd(), "data", "phrases.json"),
+  repository: PhraseRepositoryLike = phraseRepository
 ): PhraseService {
   return {
     async selectForAction(request) {
-      const customPhrases = await phraseRepository.list({
+      const customPhrases = await repository.list({
         guildId: request.guildId,
         action: request.action,
         category: request.category,
