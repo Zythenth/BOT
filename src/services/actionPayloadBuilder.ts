@@ -15,8 +15,11 @@ export function buildDefaultActionPayload(
 ): ActionVisualPayload {
   return {
     embed: {
-      description: buildDescription(context, phrase),
+      description: buildDescription(context, phrase, affinity),
       imageUrl: gif?.imageUrl,
+      authorLabel: displayName(context.actor, context),
+      targetLabel: displayName(context.target, context),
+      actionLabel: `/${context.action}`,
       footer: buildAffinityFooter(affinity),
       timestamp: context.now
     },
@@ -45,15 +48,24 @@ export function buildRetributeCustomId(context: RequiredActionPayloadContext): s
   ].join(":");
 }
 
-export function renderActionPhraseTemplate(template: string, context: RequiredActionPayloadContext): string {
+export function renderActionPhraseTemplate(
+  template: string,
+  context: RequiredActionPayloadContext,
+  affinity?: ActionAffinityResult
+): string {
   return template
-    .replaceAll("{actor}", displayName(context.actor))
-    .replaceAll("{target}", displayName(context.target))
+    .replaceAll("{autor}", displayName(context.actor, context))
+    .replaceAll("{alvo}", displayName(context.target, context))
+    .replaceAll("{pontos}", String(affinity?.pointsAwarded ?? 0))
+    .replaceAll("{total}", String(affinity?.totalPoints ?? 0))
+    .replaceAll("{marco}", affinity?.milestone?.name ?? "Sem marco")
+    .replaceAll("{actor}", displayName(context.actor, context))
+    .replaceAll("{target}", displayName(context.target, context))
     .replaceAll("{action}", context.action);
 }
 
 export function fallbackActionPhrase(context: RequiredActionPayloadContext): string {
-  return `${displayName(context.actor)} fez ${context.action} em ${displayName(context.target)}.`;
+  return `${displayName(context.actor, context)} fez ${context.action} em ${displayName(context.target, context)}.`;
 }
 
 export interface RequiredActionPayloadContext extends ActionContext {
@@ -63,21 +75,30 @@ export interface RequiredActionPayloadContext extends ActionContext {
   now: Date;
 }
 
-function displayName(user: { id: string; displayName?: string }): string {
-  return user.displayName ?? `<@${user.id}>`;
+function displayName(
+  user: { id: string; displayName?: string },
+  context: RequiredActionPayloadContext
+): string {
+  if (context.metadata?.mentionUsers === false) {
+    return user.displayName ?? `usuario ${user.id}`;
+  }
+
+  return `<@${user.id}>`;
 }
 
 function buildDescription(
   context: RequiredActionPayloadContext,
-  phrase: ActionPhraseSelection
+  phrase: ActionPhraseSelection,
+  affinity: ActionAffinityResult
 ): string {
+  const renderedPhrase = renderActionPhraseTemplate(phrase.text, context, affinity);
   const customMessage = readCustomMessage(context.metadata?.customMessage);
 
   if (!customMessage) {
-    return phrase.text;
+    return renderedPhrase;
   }
 
-  return `${phrase.text}\n\n"${customMessage}"`;
+  return `${renderedPhrase}\n\n"${customMessage}"`;
 }
 
 function readCustomMessage(value: unknown): string | undefined {

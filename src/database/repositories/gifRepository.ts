@@ -50,6 +50,12 @@ export const gifRepository = {
     });
   },
 
+  findById(id: string, db: RepositoryClient = prisma) {
+    return db.gif.findUnique({
+      where: { id }
+    });
+  },
+
   list(filters: ListGifFilters = {}, db: RepositoryClient = prisma) {
     const where: Prisma.GifWhereInput = {
       guildId: filters.guildId,

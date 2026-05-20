@@ -54,17 +54,17 @@ export function toActionReplyOptions(result: ActionResult): InteractionReplyOpti
     .addFields(
       {
         name: "Autor",
-        value: `<@${result.actorUserId}>`,
+        value: result.payload.embed.authorLabel ?? `<@${result.actorUserId}>`,
         inline: true
       },
       {
         name: "Acao",
-        value: `/${result.action}`,
+        value: result.payload.embed.actionLabel ?? `/${result.action}`,
         inline: true
       },
       {
         name: "Alvo",
-        value: `<@${result.targetUserId}>`,
+        value: result.payload.embed.targetLabel ?? `<@${result.targetUserId}>`,
         inline: true
       }
     );

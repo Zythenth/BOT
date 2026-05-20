@@ -1,7 +1,10 @@
 import { Collection } from "discord.js";
 import type { PrefixCommandDefinition, SlashCommandDefinition } from "../types";
 import { affinityCommand, rankAffinityCommand } from "./affinityCommands";
+import { configCommand } from "./configCommand";
+import { gifAdminSlashCommands } from "./gifAdminCommands";
 import { helpCommand } from "./helpCommand";
+import { phraseAdminSlashCommands } from "./phraseAdminCommands";
 import { prefixCommandDefinitions } from "./prefixCommands";
 import { privacySlashCommands } from "./privacyCommands";
 import { rpSlashCommands } from "./rpCommands";
@@ -17,6 +20,9 @@ for (const command of [
   affinityCommand,
   rankAffinityCommand,
   ...privacySlashCommands,
+  ...gifAdminSlashCommands,
+  ...phraseAdminSlashCommands,
+  configCommand,
   helpCommand
 ]) {
   slashCommands.set(command.name, command);

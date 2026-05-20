@@ -1,5 +1,6 @@
 import { getAffinityMilestone } from "../config";
 import { affinityRepository, userPreferenceRepository } from "../database";
+import { guildConfigService } from "./guildConfigService";
 
 const DEFAULT_RANKING_PAGE = 1;
 const DEFAULT_RANKING_PAGE_SIZE = 10;
@@ -36,8 +37,10 @@ export const rankingService = {
   async getGuildPairRanking(request: AffinityRankingRequest): Promise<AffinityRankingPage> {
     const page = normalizePage(request.page);
     const pageSize = normalizePageSize(request.pageSize);
+    const rankingEnabled =
+      request.rankingEnabled ?? (await guildConfigService.getConfig(request.guildId)).rankingEnabled;
 
-    if (request.rankingEnabled === false) {
+    if (!rankingEnabled) {
       return {
         entries: [],
         page,

@@ -8,11 +8,20 @@ datasource db {
 }
 
 model Guild {
-  id        String   @id
-  prefix    String   @default("-")
-  isAllowed Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 String   @id
+  prefix             String   @default("-")
+  isAllowed          Boolean  @default(true)
+  affinityEnabled    Boolean  @default(true)
+  gifsEnabled        Boolean  @default(true)
+  cooldownEnabled    Boolean  @default(true)
+  cooldownSeconds    Int      @default(30)
+  locale             String   @default("pt-BR")
+  mentionUsers       Boolean  @default(true)
+  rankingEnabled     Boolean  @default(true)
+  disabledCategories String   @default("[]")
+  allowedChannelIds  String   @default("[]")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   affinityPairs          AffinityPair[]
   interactions           Interaction[]

@@ -119,10 +119,12 @@ function buildPrefixActionContext(
     channelId: context.message.channelId,
     actor: {
       id: context.message.author.id,
+      displayName: context.message.author.globalName ?? context.message.author.username,
       isBot: context.message.author.bot
     },
     target: {
       id: target.id,
+      displayName: target.globalName ?? target.username,
       isBot: target.bot
     },
     botUser: {

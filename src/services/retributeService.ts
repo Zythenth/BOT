@@ -91,10 +91,12 @@ function buildRetributeContext(
     channelId: interaction.channelId,
     actor: {
       id: interaction.user.id,
+      displayName: interaction.user.globalName ?? interaction.user.username,
       isBot: interaction.user.bot
     },
     target: {
       id: parsed.originalActorUserId,
+      displayName: interaction.guild?.members.cache.get(parsed.originalActorUserId)?.displayName,
       isBot: false
     },
     botUser: {

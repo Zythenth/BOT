@@ -30,6 +30,19 @@ export function buildHelpEmbed(prefix = "-"): EmbedBuilder {
         name: "Privacidade",
         value:
           "`/bloquearrp`, `/desbloquearrp`, `/bloquearcategoria`, `/preferencias`, `/optout`, `/optin`"
+      },
+      {
+        name: "Admin GIFs",
+        value:
+          "`/gifadd`, `/gifbuscar`, `/gifaprovar`, `/gifbloquear`, `/gifremove`, `/gifmover`, `/giflist`, `/giftest`"
+      },
+      {
+        name: "Admin frases",
+        value: "`/fraseadd`, `/fraseremove`, `/fraselist`"
+      },
+      {
+        name: "Config",
+        value: "`/config prefixo`, `/config afinidade`, `/config gifs`, `/config categoria`, `/config canal`, `/config cooldown`, `/config idioma`, `/config mencionar`, `/config rank`, `/config reset`"
       }
     )
     .setFooter({ text: `Prefixo atual: ${prefix}` })

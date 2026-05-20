@@ -63,10 +63,12 @@ function buildActionContext(
     channelId: interaction.channelId,
     actor: {
       id: interaction.user.id,
+      displayName: interaction.user.globalName ?? interaction.user.username,
       isBot: interaction.user.bot
     },
     target: {
       id: target.id,
+      displayName: target.globalName ?? target.username,
       isBot: target.bot
     },
     botUser: {

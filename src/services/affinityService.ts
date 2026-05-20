@@ -16,6 +16,7 @@ import type {
   ActionName,
   ActionSource
 } from "../types";
+import { guildConfigService } from "./guildConfigService";
 import { preferenceService } from "./preferenceService";
 
 export interface ApplyAffinityInput {
@@ -69,6 +70,12 @@ export function createAffinityService(
       }
 
       const now = input.occurredAt ?? new Date();
+      const guildConfig = await guildConfigService.getConfig(input.guildId);
+      const effectiveConfig: AffinityServiceConfig = {
+        ...config,
+        userCooldownMs: guildConfig.cooldownSeconds * 1000,
+        pairActionCooldownMs: guildConfig.cooldownSeconds * 1000
+      };
       const [actorOptedOut, targetOptedOut] = await Promise.all([
         preferenceService.hasOptedOut(input.actorUserId),
         preferenceService.hasOptedOut(input.targetUserId)
@@ -88,7 +95,7 @@ export function createAffinityService(
       );
       const previousMilestone = getAffinityMilestone(pair.points);
 
-      if (pair.points >= config.maxPoints) {
+      if (pair.points >= effectiveConfig.maxPoints) {
         await affinityRepository.recordAction({
           guildId: input.guildId,
           userOneId: input.actorUserId,
@@ -109,7 +116,9 @@ export function createAffinityService(
         };
       }
 
-      const cooldownResult = await checkCooldowns(input, pair.id, now, config);
+      const cooldownResult = guildConfig.cooldownEnabled
+        ? await checkCooldowns(input, pair.id, now, effectiveConfig)
+        : null;
 
       if (cooldownResult) {
         await affinityRepository.recordAction({
@@ -132,8 +141,8 @@ export function createAffinityService(
         };
       }
 
-      const dailyAllowance = await calculateDailyAllowance(input, pair.id, now, config);
-      const maxRemaining = Math.max(0, config.maxPoints - pair.points);
+      const dailyAllowance = await calculateDailyAllowance(input, pair.id, now, effectiveConfig);
+      const maxRemaining = Math.max(0, effectiveConfig.maxPoints - pair.points);
       const pointsAwarded = Math.max(
         0,
         Math.min(basePoints, dailyAllowance.remainingPoints, maxRemaining)
@@ -153,7 +162,7 @@ export function createAffinityService(
         previousTotalPoints: pair.points,
         affinityPairId: updatedPair.id,
         dailyLimitReached: dailyAllowance.limitReached && pointsAwarded === 0,
-        maxPointsReached: updatedPair.points >= config.maxPoints,
+        maxPointsReached: updatedPair.points >= effectiveConfig.maxPoints,
         milestone,
         previousMilestone,
         milestoneReached: milestone.key !== previousMilestone.key,

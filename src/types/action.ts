@@ -118,6 +118,9 @@ export interface ActionVisualPayload {
   embed: {
     description: string;
     imageUrl?: string;
+    authorLabel?: string;
+    targetLabel?: string;
+    actionLabel?: string;
     footer?: string;
     timestamp?: Date;
   };
@@ -134,6 +137,8 @@ export type ActionFailureCode =
   | "self_target"
   | "own_bot_target"
   | "blocked"
+  | "category_disabled"
+  | "channel_not_allowed"
   | "missing_permission"
   | "cooldown"
   | "unknown_error";

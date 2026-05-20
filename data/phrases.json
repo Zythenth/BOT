@@ -1,0 +1,58 @@
+{
+  "hug": [
+    "{autor} abracou {alvo} com cuidado.",
+    "{autor} ofereceu um abraco quentinho para {alvo}.",
+    "{autor} puxou {alvo} para um abraco tranquilo.",
+    "{autor} deu em {alvo} um abraco cheio de carinho.",
+    "{autor} envolveu {alvo} em um abraco leve e acolhedor."
+  ],
+  "beijotesta": [
+    "{autor} deu um beijo carinhoso na testa de {alvo}.",
+    "{autor} deixou um beijo calmo na testa de {alvo}.",
+    "{autor} se aproximou e beijou a testa de {alvo} com ternura.",
+    "{autor} ofereceu a {alvo} um beijo leve na testa.",
+    "{autor} marcou a testa de {alvo} com um carinho delicado."
+  ],
+  "beijobochecha": [
+    "{autor} deu um beijo leve na bochecha de {alvo}.",
+    "{autor} deixou um beijo carinhoso na bochecha de {alvo}.",
+    "{autor} ofereceu a {alvo} um beijo fofo na bochecha.",
+    "{autor} se aproximou de {alvo} e deu um beijo de carinho na bochecha.",
+    "{autor} fez {alvo} receber um beijo gentil na bochecha."
+  ],
+  "cafune": [
+    "{autor} fez cafune em {alvo} com calma.",
+    "{autor} passou a mao pelos cabelos de {alvo} em um cafune cuidadoso.",
+    "{autor} ofereceu um cafune tranquilo para {alvo}.",
+    "{autor} fez um cafune leve em {alvo}.",
+    "{autor} deixou {alvo} relaxar com um cafune carinhoso."
+  ],
+  "consolar": [
+    "{autor} ficou ao lado de {alvo} em silencio acolhedor.",
+    "{autor} ofereceu apoio leve para {alvo}.",
+    "{autor} lembrou {alvo} de respirar com calma.",
+    "{autor} acompanhou {alvo} com paciencia e cuidado.",
+    "{autor} ofereceu uma presenca tranquila para {alvo}."
+  ],
+  "proteger": [
+    "{autor} ficou por perto para proteger {alvo}.",
+    "{autor} tomou a frente com cuidado por {alvo}.",
+    "{autor} manteve {alvo} em seguranca com carinho.",
+    "{autor} ofereceu a {alvo} uma presenca protetora.",
+    "{autor} guardou um espacinho seguro para {alvo}."
+  ],
+  "morder": [
+    "{autor} deu uma mordidinha brincalhona em {alvo}.",
+    "{autor} mordiscou {alvo} de leve, so pela brincadeira.",
+    "{autor} fez uma mordidinha de faz de conta em {alvo}.",
+    "{autor} provocou {alvo} com uma mordidinha boba.",
+    "{autor} deu em {alvo} uma mordidinha leve e comica."
+  ],
+  "cutucar": [
+    "{autor} cutucou {alvo} de leve para chamar atencao.",
+    "{autor} deu um cutucaozinho brincalhao em {alvo}.",
+    "{autor} cutucou {alvo} com um sorriso travesso.",
+    "{autor} fez um cutucao leve em {alvo}.",
+    "{autor} cutucou {alvo} so para brincar um pouco."
+  ]
+}

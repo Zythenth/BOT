@@ -1,7 +1,6 @@
 import {
   guildRepository,
-  interactionRepository,
-  phraseRepository
+  interactionRepository
 } from "../database";
 import type {
   ActionAffinityResult,
@@ -13,13 +12,14 @@ import type {
 import {
   buildDefaultActionPayload,
   fallbackActionPhrase,
-  renderActionPhraseTemplate,
   type RequiredActionPayloadContext
 } from "./actionPayloadBuilder";
 import { failAction, validateBaseActionContext } from "./actionValidation";
 import { affinityService } from "./affinityService";
 import { blockService } from "./blockService";
 import { gifService } from "./gifService";
+import { guildConfigService, type GuildConfig } from "./guildConfigService";
+import { phraseService } from "./phraseService";
 
 export interface ActionServiceDependencies {
   validateGuild(context: RequiredActionPayloadContext): Promise<ActionResult | null>;
@@ -115,6 +115,9 @@ const defaultActionServiceDependencies: ActionServiceDependencies = {
       return failAction("guild_not_allowed", "Este servidor nao esta autorizado a usar a Aurora.");
     }
 
+    const config = await guildConfigService.getConfig(context.guild.id);
+    setContextConfig(context, config);
+
     return null;
   },
 
@@ -122,7 +125,17 @@ const defaultActionServiceDependencies: ActionServiceDependencies = {
     return blockService.validateActionPrivacy(context);
   },
 
-  async validatePermissions() {
+  async validatePermissions(context) {
+    const config = await getContextConfig(context);
+
+    if (config.allowedChannelIds.length > 0 && !config.allowedChannelIds.includes(context.channelId ?? "")) {
+      return failAction("channel_not_allowed", "Este canal nao esta liberado para acoes RP.");
+    }
+
+    if (config.disabledCategories.includes(context.category)) {
+      return failAction("category_disabled", "Essa categoria esta desativada neste servidor.");
+    }
+
     return null;
   },
 
@@ -131,14 +144,11 @@ const defaultActionServiceDependencies: ActionServiceDependencies = {
   },
 
   async selectPhrase(context) {
-    const phrases = await phraseRepository.list({
+    const phrase = await phraseService.selectForAction({
       guildId: context.guild.id,
       action: context.action,
-      category: context.category,
-      isEnabled: true,
-      take: 25
+      category: context.category
     });
-    const phrase = pickRandom(phrases);
 
     if (!phrase) {
       return {
@@ -146,13 +156,16 @@ const defaultActionServiceDependencies: ActionServiceDependencies = {
       };
     }
 
-    return {
-      id: phrase.id,
-      text: renderActionPhraseTemplate(phrase.text, context)
-    };
+    return phrase;
   },
 
   async selectGif(context) {
+    const config = await getContextConfig(context);
+
+    if (!config.gifsEnabled) {
+      return undefined;
+    }
+
     return gifService.chooseGif({
       guildId: context.guild.id,
       action: context.action,
@@ -162,6 +175,15 @@ const defaultActionServiceDependencies: ActionServiceDependencies = {
   },
 
   async calculateAffinity(context) {
+    const config = await getContextConfig(context);
+
+    if (!config.affinityEnabled) {
+      return {
+        pointsAwarded: 0,
+        scoreReason: "not_pointable"
+      };
+    }
+
     return affinityService.applyAction({
       guildId: context.guild.id,
       actorUserId: context.actor.id,
@@ -203,10 +225,27 @@ function prepareContext(context: ActionContext): RequiredActionPayloadContext {
   } as RequiredActionPayloadContext;
 }
 
-function pickRandom<T>(values: T[]): T | undefined {
-  if (values.length === 0) {
-    return undefined;
+async function getContextConfig(context: RequiredActionPayloadContext): Promise<GuildConfig> {
+  const config = readContextConfig(context);
+
+  if (config) {
+    return config;
   }
 
-  return values[Math.floor(Math.random() * values.length)];
+  const loadedConfig = await guildConfigService.getConfig(context.guild.id);
+  setContextConfig(context, loadedConfig);
+  return loadedConfig;
+}
+
+function readContextConfig(context: RequiredActionPayloadContext): GuildConfig | undefined {
+  return context.metadata?.guildConfig as GuildConfig | undefined;
+}
+
+function setContextConfig(context: RequiredActionPayloadContext, config: GuildConfig): void {
+  context.metadata = {
+    ...context.metadata,
+    guildConfig: config,
+    locale: config.locale,
+    mentionUsers: config.mentionUsers
+  };
 }
