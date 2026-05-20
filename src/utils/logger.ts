@@ -11,8 +11,6 @@ export interface CommandLogContext {
 }
 
 const SECRET_KEY_PATTERN = /(token|api[_-]?key|secret|password|authorization|discord[_-]?token|giphy[_-]?api[_-]?key)/i;
-const TECHNICAL_LOG_PATH = process.env.TECHNICAL_LOG_PATH?.trim() ||
-  path.resolve(process.cwd(), "logs", "technical.log");
 
 export const logger = {
   info(message: string, meta?: unknown): void {
@@ -69,11 +67,18 @@ function formatLine(
 
 function writePrivateTechnicalLog(line: string): void {
   try {
-    mkdirSync(path.dirname(TECHNICAL_LOG_PATH), { recursive: true });
-    appendFileSync(TECHNICAL_LOG_PATH, `${line}\n`, "utf8");
+    const technicalLogPath = getTechnicalLogPath();
+
+    mkdirSync(path.dirname(technicalLogPath), { recursive: true });
+    appendFileSync(technicalLogPath, `${line}\n`, "utf8");
   } catch {
     // Logging must never break bot execution.
   }
+}
+
+function getTechnicalLogPath(): string {
+  return process.env.TECHNICAL_LOG_PATH?.trim() ||
+    path.resolve(process.cwd(), "logs", "technical.log");
 }
 
 function sanitizeValue(

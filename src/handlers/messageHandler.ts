@@ -23,7 +23,15 @@ export function registerMessageHandler(client: Client, config: AppConfig): void 
       return;
     }
 
+    const logContext = {
+      commandName: `${prefix}${parsedCommand.commandName}`,
+      commandType: "prefix" as const,
+      guildId: message.guild.id,
+      userId: message.author.id
+    };
+
     try {
+      logger.command(logContext);
       await command.execute({
         message,
         args: parsedCommand.args,
@@ -32,7 +40,10 @@ export function registerMessageHandler(client: Client, config: AppConfig): void 
         rawArgs: parsedCommand.rawArgs
       });
     } catch (error) {
-      logger.error(`Prefix command failed: ${parsedCommand.commandName}`, error);
+      logger.error("Prefix command failed.", {
+        error,
+        ...logContext
+      });
       await message.reply("Nao consegui concluir este comando agora.");
     }
   });
@@ -42,7 +53,10 @@ async function getGuildPrefix(guildId: string, fallbackPrefix: string): Promise<
   try {
     return await prefixService.getPrefixForGuild(guildId, fallbackPrefix);
   } catch (error) {
-    logger.warn("Failed to load guild prefix. Falling back to default prefix.", error);
+    logger.warn("Failed to load guild prefix. Falling back to default prefix.", {
+      error,
+      guildId
+    });
     return fallbackPrefix;
   }
 }

@@ -179,14 +179,6 @@ export const phraseModerationService = {
       outcome: "disabled"
     });
 
-    await logPhraseAdminAction(input, ADMIN_LOG_ACTIONS.PHRASE_LIST, undefined, {
-      action: input.action,
-      category: input.category,
-      returned: items.length,
-      baseCount: baseItems.length,
-      customCount: customItems.length
-    });
-
     return {
       ok: true,
       message: "Frase customizada removida da rotacao.",
@@ -211,6 +203,14 @@ export const phraseModerationService = {
     const baseItems = basePhrases.map(toBaseListItem);
     const customItems = customPhrases.map(toCustomListItem);
     const items = [...baseItems, ...customItems].slice(0, clampInteger(input.take ?? 25, 1, 50));
+
+    await logPhraseAdminAction(input, ADMIN_LOG_ACTIONS.PHRASE_LIST, undefined, {
+      action: input.action,
+      category: input.category,
+      returned: items.length,
+      baseCount: baseItems.length,
+      customCount: customItems.length
+    });
 
     return {
       ok: true,

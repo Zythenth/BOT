@@ -11,6 +11,6 @@ async function bootstrap(): Promise<void> {
 }
 
 void bootstrap().catch((error) => {
-  logger.error("Failed to start Aurora.", error);
+  logger.error("Failed to start Aurora.", { error });
   process.exitCode = 1;
 });

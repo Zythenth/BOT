@@ -29,6 +29,6 @@ async function main(): Promise<void> {
 }
 
 void main().catch((error) => {
-  logger.error("Command deploy script failed.", error);
+  logger.error("Command deploy script failed.", { error });
   process.exitCode = 1;
 });
