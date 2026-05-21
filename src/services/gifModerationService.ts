@@ -418,7 +418,9 @@ export const gifModerationService = {
       category: input.category,
       addedBy: input.actorUserId
     });
-    const storedGif = selection?.id ? await gifRepository.findById(selection.id) : undefined;
+    const storedGif = selection?.id
+      ? (await gifRepository.findById(selection.id)) ?? undefined
+      : undefined;
 
     await logGifAdminAction(input, ADMIN_LOG_ACTIONS.GIF_TEST, selection?.id, {
       action: input.action,

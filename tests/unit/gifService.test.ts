@@ -6,7 +6,11 @@ import {
   type GifStorage,
   type StoredGifLike
 } from "../../src/services/gifService";
-import type { GiphyProviderService, GiphySearchInput } from "../../src/services/giphyProviderService";
+import type {
+  GiphyGif,
+  GiphyProviderService,
+  GiphySearchInput
+} from "../../src/services/giphyProviderService";
 import type { GifRatioService } from "../../src/services/gifRatioService";
 
 test("gifService reutiliza GIF aprovado do banco sem buscar GIPHY nova", async () => {
@@ -75,6 +79,80 @@ test("gifService busca GIPHY, salva metadados e retorna GIF importado", async ()
   assert.equal(gif?.imageUrl, "https://media.example/new-gif.gif");
 });
 
+test("gifService tenta fallback generico de carinho quando buscas especificas nao batem", async () => {
+  const provider = createFakeProvider({
+    canUseApi: true,
+    searchGifsByTerm: {
+      "anime hug one": [fakeGiphyGif("dance-1", "Anime dance GIF")],
+      "anime hug two": [fakeGiphyGif("dance-2", "Anime running GIF")],
+      "anime hug three": [fakeGiphyGif("dance-3", "Anime waving GIF")],
+      "anime carinho fallback": [fakeGiphyGif("fallback-hug", "Anime comfort hug GIF")]
+    }
+  });
+  const storage = createFakeStorage({
+    approvedGifs: []
+  });
+  const service = createGifService(
+    { provider: "giphy", allowUncategorizedGifs: true },
+    provider.service,
+    ratioServiceReturning("giphy"),
+    {
+      hug: ["anime hug one", "anime hug two", "anime hug three"],
+      __generic_affection: ["anime carinho fallback"]
+    },
+    storage.service
+  );
+
+  const gif = await service.chooseGif({
+    guildId: "guild-1",
+    action: "hug",
+    category: "carinho_fofo",
+    addedBy: "actor"
+  });
+
+  assert.equal(provider.calls.search, 4);
+  assert.equal(storage.created.length, 1);
+  assert.equal(storage.created[0]?.providerGifId, "fallback-hug");
+  assert.equal(storage.created[0]?.searchTerm, "anime carinho fallback");
+  assert.equal(gif?.providerGifId, "fallback-hug");
+});
+
+test("gifService aceita anime generico na quarta busca mesmo com titulo pobre", async () => {
+  const provider = createFakeProvider({
+    canUseApi: true,
+    searchGifsByTerm: {
+      "anime hug one": [fakeGiphyGif("dance-1", "Anime dance GIF")],
+      "anime hug two": [fakeGiphyGif("dance-2", "Anime running GIF")],
+      "anime hug three": [fakeGiphyGif("dance-3", "Anime waving GIF")],
+      "anime carinho fallback": [fakeGiphyGif("fallback-anime", "Anime GIF")]
+    }
+  });
+  const storage = createFakeStorage({
+    approvedGifs: []
+  });
+  const service = createGifService(
+    { provider: "giphy", allowUncategorizedGifs: true },
+    provider.service,
+    ratioServiceReturning("giphy"),
+    {
+      hug: ["anime hug one", "anime hug two", "anime hug three"],
+      __generic_affection: ["anime carinho fallback"]
+    },
+    storage.service
+  );
+
+  const gif = await service.chooseGif({
+    guildId: "guild-1",
+    action: "hug",
+    category: "carinho_fofo",
+    addedBy: "actor"
+  });
+
+  assert.equal(provider.calls.search, 4);
+  assert.equal(storage.created[0]?.providerGifId, "fallback-anime");
+  assert.equal(gif?.providerGifId, "fallback-anime");
+});
+
 test("gifService retorna fallback sem GIF quando cota acabou e banco nao tem aprovado", async () => {
   const provider = createFakeProvider({
     canUseApi: false,
@@ -140,6 +218,7 @@ function createFakeProvider(options: {
   canUseApi: boolean;
   searchGifId?: string;
   getByIdGifId?: string;
+  searchGifsByTerm?: Record<string, GiphyGif[]>;
 }): {
   service: GiphyProviderService;
   calls: {
@@ -155,22 +234,18 @@ function createFakeProvider(options: {
   return {
     calls,
     service: {
-      async search(_input: GiphySearchInput) {
+      async search(input: GiphySearchInput) {
         calls.search += 1;
+
+        const gifsByTerm = options.searchGifsByTerm?.[input.searchTerm];
 
         return {
           status: "ok",
-          gifs: options.searchGifId
+          gifs: gifsByTerm ?? (options.searchGifId
             ? [
-                {
-                  provider: "giphy",
-                  providerGifId: options.searchGifId,
-                  rating: "pg",
-                  pageUrl: `https://giphy.example/${options.searchGifId}`,
-                  mediaUrl: `https://media.example/${options.searchGifId}.gif`
-                }
+                fakeGiphyGif(options.searchGifId, "Anime hug GIF")
               ]
-            : []
+            : [])
         };
       },
       async getById(providerGifId) {
@@ -187,6 +262,7 @@ function createFakeProvider(options: {
           gif: {
             provider: "giphy",
             providerGifId,
+            title: "Anime approved GIF",
             rating: "pg",
             pageUrl: `https://giphy.example/${providerGifId}`,
             mediaUrl: `https://media.example/${providerGifId}.gif`
@@ -208,6 +284,17 @@ function createFakeProvider(options: {
         return options.canUseApi;
       }
     }
+  };
+}
+
+function fakeGiphyGif(providerGifId: string, title: string): GiphyGif {
+  return {
+    provider: "giphy",
+    providerGifId,
+    title,
+    rating: "pg",
+    pageUrl: `https://giphy.example/${providerGifId}`,
+    mediaUrl: `https://media.example/${providerGifId}.gif`
   };
 }
 

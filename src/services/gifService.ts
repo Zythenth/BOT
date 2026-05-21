@@ -8,6 +8,7 @@ import {
   type GiphyProviderService
 } from "./giphyProviderService";
 import { gifRatioService, type GifRatioService } from "./gifRatioService";
+import { logger } from "../utils";
 
 export interface GifServiceConfig {
   allowUncategorizedGifs: boolean;
@@ -33,7 +34,7 @@ export interface StoredGifLike {
   providerGifId: string;
   action: string;
   category: string;
-  status: GifStatus;
+  status: string;
 }
 
 export interface CreateImportedGifInput {
@@ -42,7 +43,7 @@ export interface CreateImportedGifInput {
   providerGifId: string;
   action: ActionName;
   category: ActionCategory;
-  status: string;
+  status: GifStatus;
   rating?: string;
   searchTerm?: string;
   giphyPageUrl?: string;
@@ -76,6 +77,7 @@ export function createGifService(
   return {
     async chooseGif(request) {
       if (config.provider !== "giphy") {
+        logGifSelection("disabled_provider", request, { provider: config.provider });
         return undefined;
       }
 
@@ -96,48 +98,87 @@ export function createGifService(
         const approvedGif = await pickApprovedGif(request, provider, storage);
 
         if (approvedGif || !(await provider.canUseApi())) {
+          logGifSelection(approvedGif ? "database" : "none", request, {
+            selectedSource: decision.selectedSource,
+            canUseGiphy,
+            approvedCount: decision.approvedCount
+          });
           return approvedGif;
         }
       }
 
-      const searchTerm = pickSearchTerm(searchTerms, request.action);
+      const searchTermsForAction = pickSearchTerms(searchTerms, request.action, 3);
 
-      if (!searchTerm || !(await provider.canUseApi())) {
-        return pickApprovedGif(request, provider, storage);
+      if (searchTermsForAction.length === 0 && !(await provider.canUseApi())) {
+        const approvedGif = await pickApprovedGif(request, provider, storage);
+        logGifSelection(approvedGif ? "database_fallback" : "none", request, {
+          reason: "giphy_unavailable",
+          canUseGiphy,
+          approvedCount: decision.approvedCount
+        });
+        return approvedGif;
       }
 
-      const result = await provider.search({
-        searchTerm,
-        limit: 10
+      const searchedGif = await searchAnimeGif({
+        request,
+        provider,
+        storage,
+        searchTerms: searchTermsForAction,
+        allowUncategorizedGifs: config.allowUncategorizedGifs,
+        matchKeywords: getActionResultKeywords(request.action)
       });
 
-      if (result.status !== "ok") {
-        return pickApprovedGif(request, provider, storage);
+      if (searchedGif.selection) {
+        logGifSelection("giphy", request, {
+          searchTerm: searchedGif.searchTerm,
+          storedStatus: searchedGif.storedStatus,
+          approvedCount: decision.approvedCount,
+          hasMediaUrl: searchedGif.hasMediaUrl,
+          giphyResultCount: searchedGif.giphyResultCount,
+          animeResultCount: searchedGif.animeResultCount,
+          matchingResultCount: searchedGif.matchingResultCount
+        });
+        return searchedGif.selection;
       }
 
-      const giphyGif = pickRandom(result.gifs);
-
-      if (!giphyGif) {
-        return undefined;
-      }
-
-      const storedGif = await upsertImportedGif({
+      const fallbackSearchTerms = pickGenericAffectionSearchTerms(searchTerms, 1);
+      const fallbackSearchedGif = await searchAnimeGif({
         request,
-        giphyGif,
-        searchTerm,
-        allowUncategorizedGifs: config.allowUncategorizedGifs
-      }, storage);
+        provider,
+        storage,
+        searchTerms: fallbackSearchTerms,
+        allowUncategorizedGifs: config.allowUncategorizedGifs,
+        matchKeywords: []
+      });
 
-      if (!canUseStoredGif(storedGif, request, config.allowUncategorizedGifs)) {
-        return pickApprovedGif(request, provider, storage);
+      if (fallbackSearchedGif.selection) {
+        logGifSelection("giphy_affection_fallback", request, {
+          reason: searchedGif.reason,
+          searchTerm: fallbackSearchedGif.searchTerm,
+          specificSearchTerms: searchedGif.searchTermsTried,
+          fallbackSearchTerms: fallbackSearchedGif.searchTermsTried,
+          storedStatus: fallbackSearchedGif.storedStatus,
+          approvedCount: decision.approvedCount,
+          hasMediaUrl: fallbackSearchedGif.hasMediaUrl,
+          giphyResultCount: fallbackSearchedGif.giphyResultCount,
+          animeResultCount: fallbackSearchedGif.animeResultCount,
+          matchingResultCount: fallbackSearchedGif.matchingResultCount
+        });
+        return fallbackSearchedGif.selection;
       }
 
-      return {
-        id: storedGif.id,
-        provider: storedGif.provider,
-        providerGifId: storedGif.providerGifId,
-        imageUrl: giphyGif.mediaUrl ?? provider.buildTransientMediaUrl(storedGif.providerGifId)
-      };
+      const approvedGif = await pickApprovedGif(request, provider, storage);
+      logGifSelection(approvedGif ? "database_fallback" : "none", request, {
+        reason: fallbackSearchedGif.reason ?? searchedGif.reason,
+        specificSearchTerms: searchedGif.searchTermsTried,
+        fallbackSearchTerms: fallbackSearchedGif.searchTermsTried,
+        giphyResultCount: searchedGif.giphyResultCount + fallbackSearchedGif.giphyResultCount,
+        animeResultCount: searchedGif.animeResultCount + fallbackSearchedGif.animeResultCount,
+        matchingResultCount:
+          searchedGif.matchingResultCount + fallbackSearchedGif.matchingResultCount,
+        approvedCount: decision.approvedCount
+      });
+      return approvedGif;
     },
 
     async markGifUsed(gifId, usedAt = new Date()) {
@@ -145,8 +186,6 @@ export function createGifService(
     }
   };
 }
-
-export const gifService = createGifService();
 
 export function readGifServiceConfigFromEnv(): GifServiceConfig {
   return {
@@ -224,6 +263,133 @@ async function upsertImportedGif(input: {
   });
 }
 
+async function searchAnimeGif(input: {
+  request: GifSelectionRequest;
+  provider: GiphyProviderService;
+  storage: GifStorage;
+  searchTerms: readonly string[];
+  allowUncategorizedGifs: boolean;
+  matchKeywords: readonly string[];
+}): Promise<{
+  selection?: ActionGifSelection;
+  reason?: string;
+  searchTerm?: string;
+  storedStatus?: string;
+  hasMediaUrl?: boolean;
+  searchTermsTried: string[];
+  giphyResultCount: number;
+  animeResultCount: number;
+  matchingResultCount: number;
+}> {
+  const searchTermsTried: string[] = [];
+  let giphyResultCount = 0;
+  let animeResultCount = 0;
+  let matchingResultCount = 0;
+
+  if (input.searchTerms.length === 0) {
+    return {
+      reason: "missing_search_term",
+      searchTermsTried,
+      giphyResultCount,
+      animeResultCount,
+      matchingResultCount
+    };
+  }
+
+  for (const searchTerm of input.searchTerms) {
+    if (!(await input.provider.canUseApi())) {
+      return {
+        reason: "giphy_unavailable",
+        searchTermsTried,
+        giphyResultCount,
+        animeResultCount,
+        matchingResultCount
+      };
+    }
+
+    searchTermsTried.push(searchTerm);
+    const result = await input.provider.search({
+      searchTerm,
+      limit: 15
+    });
+
+    if (result.status !== "ok") {
+      return {
+        reason: result.status,
+        searchTermsTried,
+        giphyResultCount,
+        animeResultCount,
+        matchingResultCount
+      };
+    }
+
+    giphyResultCount += result.gifs.length;
+
+    const animeGifs = filterAnimeGifs(result.gifs);
+    animeResultCount += animeGifs.length;
+
+    const matchingGifs =
+      input.matchKeywords.length > 0
+        ? filterGifsByKeywords(animeGifs, input.matchKeywords)
+        : animeGifs;
+    matchingResultCount += matchingGifs.length;
+
+    const giphyGif = pickRandom(matchingGifs);
+
+    if (!giphyGif) {
+      continue;
+    }
+
+    const storedGif = await upsertImportedGif({
+      request: input.request,
+      giphyGif,
+      searchTerm,
+      allowUncategorizedGifs: input.allowUncategorizedGifs
+    }, input.storage);
+
+    if (!canUseStoredGif(storedGif, input.request, input.allowUncategorizedGifs)) {
+      return {
+        reason: "stored_gif_not_allowed",
+        searchTerm,
+        storedStatus: storedGif.status,
+        searchTermsTried,
+        giphyResultCount,
+        animeResultCount,
+        matchingResultCount
+      };
+    }
+
+    return {
+      selection: {
+        id: storedGif.id,
+        provider: storedGif.provider,
+        providerGifId: storedGif.providerGifId,
+        imageUrl: giphyGif.mediaUrl ?? input.provider.buildTransientMediaUrl(storedGif.providerGifId)
+      },
+      searchTerm,
+      storedStatus: storedGif.status,
+      hasMediaUrl: Boolean(giphyGif.mediaUrl),
+      searchTermsTried,
+      giphyResultCount,
+      animeResultCount,
+      matchingResultCount
+    };
+  }
+
+  return {
+    reason:
+      giphyResultCount === 0
+        ? "empty_giphy_result"
+        : animeResultCount === 0
+          ? "giphy_result_not_anime"
+          : "giphy_result_not_matching_action",
+    searchTermsTried,
+    giphyResultCount,
+    animeResultCount,
+    matchingResultCount
+  };
+}
+
 const defaultGifStorage: GifStorage = {
   listApproved(request) {
     return gifRepository.list({
@@ -253,6 +419,8 @@ const defaultGifStorage: GifStorage = {
   }
 };
 
+export const gifService = createGifService();
+
 function loadSearchTerms(): SearchTermsByAction {
   const filePath = path.resolve(process.cwd(), "data", "giphy-search-terms.json");
 
@@ -264,8 +432,21 @@ function loadSearchTerms(): SearchTermsByAction {
   return JSON.parse(rawJson) as SearchTermsByAction;
 }
 
-function pickSearchTerm(searchTerms: SearchTermsByAction, action: ActionName): string | undefined {
-  return pickRandom(searchTerms[action] ?? []);
+function pickSearchTerms(
+  searchTerms: SearchTermsByAction,
+  action: ActionName,
+  take: number
+): string[] {
+  return shuffle(searchTerms[action] ?? []).slice(0, take);
+}
+
+function pickGenericAffectionSearchTerms(
+  searchTerms: SearchTermsByAction,
+  take: number
+): string[] {
+  const configuredTerms = searchTerms[GENERIC_AFFECTION_SEARCH_TERMS_KEY] ?? [];
+  return shuffle(configuredTerms.length > 0 ? configuredTerms : DEFAULT_GENERIC_AFFECTION_SEARCH_TERMS)
+    .slice(0, take);
 }
 
 function canUseStoredGif(
@@ -301,6 +482,192 @@ function pickRandom<T>(values: T[]): T | undefined {
   return values[Math.floor(Math.random() * values.length)];
 }
 
+function shuffle<T>(values: readonly T[]): T[] {
+  return [...values].sort(() => Math.random() - 0.5);
+}
+
+function filterAnimeGifs(gifs: readonly GiphyGif[]): GiphyGif[] {
+  return gifs.filter((gif) => {
+    const searchableText = getSearchableGifText(gif);
+
+    return (
+      ANIME_RESULT_KEYWORDS.some((keyword) => includesNormalizedKeyword(searchableText, keyword)) &&
+      !BLOCKED_RESULT_KEYWORDS.some((keyword) => includesNormalizedKeyword(searchableText, keyword))
+    );
+  });
+}
+
+function filterGifsByKeywords(
+  gifs: readonly GiphyGif[],
+  keywords: readonly string[]
+): GiphyGif[] {
+  return gifs.filter((gif) => {
+    const searchableText = getSearchableGifText(gif);
+    return keywords.some((keyword) => includesNormalizedKeyword(searchableText, keyword));
+  });
+}
+
+function getSearchableGifText(gif: GiphyGif): string {
+  return normalizeText([
+    gif.title,
+    gif.pageUrl,
+    gif.mediaUrl
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" "));
+}
+
+function includesNormalizedKeyword(searchableText: string, keyword: string): boolean {
+  return searchableText.includes(normalizeText(keyword));
+}
+
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getActionResultKeywords(action: ActionName): readonly string[] {
+  return ACTION_RESULT_KEYWORDS[action] ?? [String(action)];
+}
+
+const GENERIC_AFFECTION_SEARCH_TERMS_KEY = "__generic_affection";
+
+const DEFAULT_GENERIC_AFFECTION_SEARCH_TERMS = [
+  "anime affection hug gif",
+  "anime wholesome hug gif",
+  "anime comfort hug gif",
+  "anime head pat comfort gif",
+  "anime caring friends gif",
+  "anime gentle embrace gif",
+  "anime cute friendship hug",
+  "anime cheering up hug gif"
+];
+
+const ANIME_RESULT_KEYWORDS = [
+  "anime",
+  "manga",
+  "crunchyroll",
+  "funimation",
+  "shoujo",
+  "shojo",
+  "shounen",
+  "shonen",
+  "naruto",
+  "one-piece",
+  "one piece",
+  "bleach",
+  "jujutsu",
+  "demon-slayer",
+  "demon slayer",
+  "kimetsu",
+  "haikyuu",
+  "horimiya",
+  "toradora",
+  "clannad",
+  "sailor-moon",
+  "sailor moon",
+  "fruits-basket",
+  "fruits basket",
+  "spy-x-family",
+  "spy x family",
+  "violet-evergarden",
+  "violet evergarden",
+  "my-hero-academia",
+  "my hero academia",
+  "boku-no-hero",
+  "boku no hero"
+];
+
+const BLOCKED_RESULT_KEYWORDS = [
+  "ai generated",
+  "ai-generated",
+  "pixai",
+  "stable diffusion",
+  "midjourney",
+  "novelai",
+  "waifu diffusion"
+];
+
+const ACTION_RESULT_KEYWORDS: Record<string, readonly string[]> = {
+  kiss: [
+    "kiss",
+    "kissing",
+    "couple kiss",
+    "romantic kiss",
+    "selinho"
+  ],
+  beijotesta: [
+    "forehead kiss",
+    "kiss forehead",
+    "forehead"
+  ],
+  beijobochecha: [
+    "cheek kiss",
+    "kiss cheek",
+    "cheek"
+  ],
+  hug: [
+    "hug",
+    "hugs",
+    "hugging",
+    "embrace",
+    "cuddle"
+  ],
+  cafune: [
+    "headpat",
+    "head pat",
+    "pat",
+    "hair pat"
+  ],
+  consolar: [
+    "comfort",
+    "comforting",
+    "console",
+    "consoling",
+    "sad hug",
+    "crying hug"
+  ],
+  proteger: [
+    "protect",
+    "protecting",
+    "protective",
+    "saving",
+    "shield"
+  ],
+  morder: [
+    "bite",
+    "biting",
+    "nibble",
+    "chomp"
+  ],
+  cutucar: [
+    "poke",
+    "poking",
+    "cheek poke"
+  ]
+};
+
+const GENERIC_AFFECTION_RESULT_KEYWORDS = [
+  "hug",
+  "hugs",
+  "hugging",
+  "embrace",
+  "cuddle",
+  "comfort",
+  "comforting",
+  "headpat",
+  "head pat",
+  "pat",
+  "caring",
+  "affection",
+  "friendship",
+  "cheering up",
+  "gentle"
+];
+
 function readBoolean(name: string, fallback: boolean): boolean {
   const value = process.env[name]?.trim().toLowerCase();
 
@@ -321,4 +688,18 @@ function readBoolean(name: string, fallback: boolean): boolean {
 
 function readString(name: string, fallback: string): string {
   return process.env[name]?.trim() || fallback;
+}
+
+function logGifSelection(
+  outcome: string,
+  request: GifSelectionRequest,
+  details: Record<string, unknown>
+): void {
+  logger.info("GIF selection result.", {
+    outcome,
+    guildId: request.guildId,
+    action: request.action,
+    category: request.category,
+    ...details
+  });
 }

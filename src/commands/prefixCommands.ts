@@ -106,14 +106,16 @@ function buildPrefixActionContext(
   botUser: NonNullable<PrefixCommandContext["message"]["client"]["user"]>,
   customMessage?: string
 ): ActionContext {
+  const guildId = context.message.guildId;
+
   return {
     action: definition.action,
     category: definition.category,
     source: "prefix",
-    guild: context.message.guild
+    guild: guildId
       ? {
-          id: context.message.guild.id,
-          name: context.message.guild.name
+          id: guildId,
+          name: context.message.guild?.name ?? "Servidor"
         }
       : null,
     channelId: context.message.channelId,

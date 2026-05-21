@@ -85,12 +85,13 @@ export const gifRatioService = createGifRatioService();
 
 export function getRatioBucketForApprovedCount(approvedCount: number): GifRatioBucket {
   const safeCount = Math.max(Math.floor(approvedCount), 0);
-  const bucket = GIF_RATIO_BUCKETS.find((candidate) => {
+  const buckets: readonly GifRatioBucket[] = GIF_RATIO_BUCKETS;
+  const bucket = buckets.find((candidate) => {
     const underMax = candidate.maxApproved === undefined || safeCount <= candidate.maxApproved;
     return safeCount >= candidate.minApproved && underMax;
   });
 
-  return bucket ?? GIF_RATIO_BUCKETS[GIF_RATIO_BUCKETS.length - 1];
+  return bucket ?? buckets[buckets.length - 1];
 }
 
 function chooseSource(input: {

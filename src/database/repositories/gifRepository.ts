@@ -11,6 +11,12 @@ export interface CreateGifInput
   status?: GifStatus;
 }
 
+export interface UpdateGiphyMetadataInput {
+  rating?: string;
+  searchTerm?: string;
+  giphyPageUrl?: string;
+}
+
 export interface ListGifFilters extends ListOptions {
   guildId?: string;
   action?: string;
@@ -143,7 +149,7 @@ export const gifRepository = {
 
   updateGiphyMetadata(
     id: string,
-    data: Pick<Prisma.GifUncheckedUpdateInput, "rating" | "searchTerm" | "giphyPageUrl">,
+    data: UpdateGiphyMetadataInput,
     db: RepositoryClient = prisma
   ) {
     return db.gif.update({

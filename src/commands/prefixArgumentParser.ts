@@ -37,10 +37,20 @@ export async function resolvePrefixTarget(
     };
   }
 
+  const mentionedUser = message.mentions.users.get(targetUserId);
+
+  if (mentionedUser) {
+    return {
+      ok: true,
+      user: mentionedUser,
+      customMessage: sanitizeCustomMessage(args.slice(1))
+    };
+  }
+
   if (!message.guild) {
     return {
       ok: false,
-      message: "Comandos de RP so funcionam em servidores."
+      message: "Nao consegui confirmar esse usuario no servidor. Tente mencionar a pessoa."
     };
   }
 

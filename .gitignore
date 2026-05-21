@@ -1,4 +1,5 @@
 node_modules/
+.npm-cache/
 dist/
 coverage/
 logs/
@@ -13,6 +14,9 @@ env/*
 !env/.env.example
 !env/.env.development.example
 !env/.env.production.example
+
+data/*.env
+!data/aurora.env.example
 
 npm-debug.log*
 yarn-debug.log*

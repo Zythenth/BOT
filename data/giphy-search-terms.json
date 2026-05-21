@@ -1,56 +1,88 @@
 {
   "kiss": [
-    "anime kiss",
-    "cute anime kiss",
-    "romantic anime kiss",
-    "soft anime kiss"
+    "anime kiss gif",
+    "anime couple kiss gif",
+    "shoujo anime kiss",
+    "romantic anime kiss gif",
+    "horimiya anime kiss",
+    "toradora anime kiss",
+    "kimi ni todoke kiss"
   ],
   "beijotesta": [
-    "forehead kiss anime",
-    "anime forehead kiss",
-    "cute forehead kiss",
-    "soft forehead kiss anime"
+    "anime forehead kiss gif",
+    "shoujo forehead kiss anime",
+    "anime gentle forehead kiss",
+    "anime caring forehead kiss"
   ],
   "beijobochecha": [
-    "cheek kiss anime",
-    "anime cheek kiss",
-    "cute cheek kiss",
-    "soft cheek kiss anime"
+    "anime cheek kiss gif",
+    "shoujo cheek kiss anime",
+    "anime cute cheek kiss",
+    "anime soft cheek kiss"
   ],
   "hug": [
-    "anime hug",
-    "comfort hug anime",
-    "cute hug",
-    "wholesome anime hug"
+    "anime hug gif",
+    "anime comforting hug",
+    "anime friends hug",
+    "anime embrace gif",
+    "anime crying hug",
+    "fruits basket anime hug",
+    "horimiya anime hug",
+    "clannad anime hug",
+    "violet evergarden hug"
   ],
   "cafune": [
-    "anime head pat",
+    "anime head pat gif",
     "headpat anime",
-    "pat head cute",
-    "gentle head pat anime"
+    "anime headpat gif",
+    "anime gentle head pat",
+    "anime girl headpat",
+    "anime boy head pat"
   ],
   "consolar": [
-    "anime comfort",
     "comfort hug anime",
     "anime comforting friend",
-    "cute anime comfort"
+    "anime crying comfort hug",
+    "anime friend consolation",
+    "anime sad hug",
+    "anime emotional hug"
   ],
   "proteger": [
-    "anime protect",
+    "anime protect friend",
     "protective anime hug",
-    "anime shield friend",
-    "anime protecting someone"
+    "anime saving friend",
+    "anime shield protect",
+    "anime protecting girl",
+    "anime saving someone"
   ],
   "morder": [
-    "cute anime bite",
+    "anime bite gif",
     "playful anime bite",
-    "anime nibble cute",
-    "funny anime bite"
+    "anime cute bite gif",
+    "anime nibble",
+    "anime funny bite",
+    "anime chomp"
   ],
   "cutucar": [
-    "anime poke",
-    "cute anime poke",
+    "anime poke gif",
+    "anime cheek poke",
     "playful anime poke",
-    "funny anime poke"
+    "anime teasing poke",
+    "anime poking cheek",
+    "anime cute poke"
+  ],
+  "__generic_affection": [
+    "anime affection hug gif",
+    "anime wholesome hug gif",
+    "anime comfort hug gif",
+    "anime head pat comfort gif",
+    "anime caring friends gif",
+    "anime gentle embrace gif",
+    "anime cute friendship hug",
+    "anime cheering up hug gif",
+    "anime soft friendship moment",
+    "anime emotional support hug",
+    "anime gentle headpat",
+    "anime best friends hug"
   ]
 }

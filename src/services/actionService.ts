@@ -101,8 +101,6 @@ export function createActionService(
   };
 }
 
-export const actionService = createActionService();
-
 const defaultActionServiceDependencies: ActionServiceDependencies = {
   async validateGuild(context) {
     const guild = await guildRepository.findById(context.guild.id);
@@ -217,6 +215,8 @@ const defaultActionServiceDependencies: ActionServiceDependencies = {
     });
   }
 };
+
+export const actionService = createActionService();
 
 function prepareContext(context: ActionContext): RequiredActionPayloadContext {
   return {

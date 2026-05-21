@@ -105,9 +105,11 @@ export function toActionMessageReplyOptions(result: ActionResult): MessageReplyO
   }
 
   const options = toActionReplyOptions(result);
-  const { ephemeral: _ephemeral, ...messageOptions } = options;
-
-  return messageOptions;
+  return {
+    content: options.content,
+    embeds: options.embeds,
+    components: options.components
+  };
 }
 
 function buildActionRows(
@@ -148,6 +150,9 @@ function toDiscordButtonStyle(style: ActionResponseButton["style"]): ButtonStyle
 }
 
 function toEditReplyOptions(options: InteractionReplyOptions): InteractionEditReplyOptions {
-  const { ephemeral: _ephemeral, ...editableOptions } = options;
-  return editableOptions;
+  return {
+    content: options.content,
+    embeds: options.embeds,
+    components: options.components
+  };
 }

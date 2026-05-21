@@ -145,6 +145,13 @@ npm run deploy:commands
 
 Se `DISCORD_DEV_GUILD_ID` estiver definido, os comandos sao registrados no servidor de desenvolvimento. Sem `DISCORD_DEV_GUILD_ID`, o script registra comandos globais da aplicacao.
 
+Se o Discord responder `Missing Access` durante `deploy:commands`, confira:
+
+- `DISCORD_TOKEN` e `DISCORD_CLIENT_ID` pertencem a mesma aplicacao no Developer Portal.
+- `DISCORD_DEV_GUILD_ID`, quando preenchido, aponta para um servidor onde esse mesmo bot esta instalado.
+- O bot foi convidado com os scopes `bot` e `applications.commands`.
+- Para comandos globais em producao, deixe `DISCORD_DEV_GUILD_ID` vazio.
+
 ## Desenvolvimento
 
 ```bat

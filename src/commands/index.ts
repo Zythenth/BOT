@@ -6,6 +6,7 @@ import { gifAdminSlashCommands } from "./gifAdminCommands";
 import { helpCommand } from "./helpCommand";
 import { phraseAdminSlashCommands } from "./phraseAdminCommands";
 import { prefixCommandDefinitions } from "./prefixCommands";
+import { prefixStatusCommand } from "./prefixStatusCommand";
 import { privacySlashCommands } from "./privacyCommands";
 import { rpSlashCommands } from "./rpCommands";
 
@@ -23,6 +24,7 @@ for (const command of [
   ...gifAdminSlashCommands,
   ...phraseAdminSlashCommands,
   configCommand,
+  prefixStatusCommand,
   helpCommand
 ]) {
   slashCommands.set(command.name, command);

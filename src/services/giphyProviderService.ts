@@ -14,6 +14,7 @@ export interface GiphyProviderConfig {
 export interface GiphyGif {
   provider: "giphy";
   providerGifId: string;
+  title?: string;
   rating?: string;
   pageUrl?: string;
   mediaUrl?: string;
@@ -196,6 +197,8 @@ interface GiphySinglePayload {
 
 interface GiphyApiGif {
   id?: string;
+  title?: string;
+  slug?: string;
   url?: string;
   rating?: string;
   images?: {
@@ -217,6 +220,7 @@ function toGiphyGif(input: GiphyApiGif): GiphyGif | undefined {
   return {
     provider: GIPHY_PROVIDER,
     providerGifId: input.id,
+    title: input.title ?? input.slug,
     rating: input.rating,
     pageUrl: input.url,
     mediaUrl:

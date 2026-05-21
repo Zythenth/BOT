@@ -311,7 +311,7 @@ export function createPersonalDataService(dependencies: PersonalDataDependencies
 
 export const personalDataService = createPersonalDataService({
   now: () => new Date(),
-  transaction: (work) => prisma.$transaction((db) => work(db)),
+  transaction: (work) => prisma.$transaction((db: RepositoryClient) => work(db)),
   preferences: userPreferenceRepository,
   interactions: interactionRepository,
   affinityPairs: affinityRepository,
