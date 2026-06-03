@@ -73,7 +73,7 @@ test("gifService busca GIPHY, salva metadados e retorna GIF importado", async ()
   assert.equal(provider.calls.search, 1);
   assert.equal(storage.created.length, 1);
   assert.equal(storage.created[0]?.providerGifId, "new-gif");
-  assert.equal(storage.created[0]?.status, "uncategorized");
+  assert.equal(storage.created[0]?.status, "approved");
   assert.equal(storage.created[0]?.searchTerm, "anime hug");
   assert.equal(gif?.providerGifId, "new-gif");
   assert.equal(gif?.imageUrl, "https://media.example/new-gif.gif");
@@ -151,6 +151,108 @@ test("gifService aceita anime generico na quarta busca mesmo com titulo pobre", 
   assert.equal(provider.calls.search, 4);
   assert.equal(storage.created[0]?.providerGifId, "fallback-anime");
   assert.equal(gif?.providerGifId, "fallback-anime");
+});
+
+test("gifService aceita quarta busca generica mesmo sem palavra anime no titulo", async () => {
+  const provider = createFakeProvider({
+    canUseApi: true,
+    searchGifsByTerm: {
+      "anime beijotesta one": [fakeGiphyGif("dance-1", "Anime dance GIF")],
+      "anime beijotesta two": [fakeGiphyGif("dance-2", "Anime running GIF")],
+      "anime beijotesta three": [fakeGiphyGif("dance-3", "Anime waving GIF")],
+      "anime carinho fallback": [fakeGiphyGif("fallback-generic", "Wholesome hug GIF")]
+    }
+  });
+  const storage = createFakeStorage({
+    approvedGifs: []
+  });
+  const service = createGifService(
+    { provider: "giphy", allowUncategorizedGifs: true },
+    provider.service,
+    ratioServiceReturning("giphy"),
+    {
+      beijotesta: ["anime beijotesta one", "anime beijotesta two", "anime beijotesta three"],
+      __generic_affection: ["anime carinho fallback"]
+    },
+    storage.service
+  );
+
+  const gif = await service.chooseGif({
+    guildId: "guild-1",
+    action: "beijotesta",
+    category: "carinho_fofo",
+    addedBy: "actor"
+  });
+
+  assert.equal(provider.calls.search, 4);
+  assert.equal(storage.created[0]?.providerGifId, "fallback-generic");
+  assert.equal(gif?.providerGifId, "fallback-generic");
+});
+
+test("gifService ignora resultado com metadado bloqueado antes de salvar", async () => {
+  const provider = createFakeProvider({
+    canUseApi: true,
+    searchGifsByTerm: {
+      "anime comforting hug": [
+        fakeGiphyGif("persona-ai", "Hana Sparkling Eyes GIF by Persona"),
+        fakeGiphyGif("safe-hug", "Fruits Basket Anime Hug GIF")
+      ]
+    }
+  });
+  const storage = createFakeStorage({
+    approvedGifs: []
+  });
+  const service = createGifService(
+    { provider: "giphy", allowUncategorizedGifs: true },
+    provider.service,
+    ratioServiceReturning("giphy"),
+    { hug: ["anime comforting hug"] },
+    storage.service
+  );
+
+  const gif = await service.chooseGif({
+    guildId: "guild-1",
+    action: "hug",
+    category: "carinho_fofo",
+    addedBy: "actor"
+  });
+
+  assert.equal(storage.created.length, 1);
+  assert.equal(storage.created[0]?.providerGifId, "safe-hug");
+  assert.equal(gif?.providerGifId, "safe-hug");
+});
+
+test("gifService promove GIF antigo uncategorized para approved quando ele bate com a acao", async () => {
+  const provider = createFakeProvider({
+    canUseApi: true,
+    searchGifId: "old-gif"
+  });
+  const storage = createFakeStorage({
+    approvedGifs: [],
+    existingGif: storedGif({
+      id: "old-gif-id",
+      providerGifId: "old-gif",
+      status: "uncategorized"
+    })
+  });
+  const service = createGifService(
+    { provider: "giphy", allowUncategorizedGifs: true },
+    provider.service,
+    ratioServiceReturning("giphy"),
+    { hug: ["anime hug"] },
+    storage.service
+  );
+
+  const gif = await service.chooseGif({
+    guildId: "guild-1",
+    action: "hug",
+    category: "carinho_fofo",
+    addedBy: "actor"
+  });
+
+  assert.equal(storage.updated[0]?.id, "old-gif-id");
+  assert.equal(storage.updated[0]?.data.status, "approved");
+  assert.equal(gif?.providerGifId, "old-gif");
 });
 
 test("gifService retorna fallback sem GIF quando cota acabou e banco nao tem aprovado", async () => {
@@ -300,20 +402,30 @@ function fakeGiphyGif(providerGifId: string, title: string): GiphyGif {
 
 function createFakeStorage(options: {
   approvedGifs: StoredGifLike[];
+  existingGif?: StoredGifLike;
 }): {
   service: GifStorage;
   created: CreateImportedGifInput[];
+  updated: Array<{
+    id: string;
+    data: Parameters<GifStorage["updateGiphyMetadata"]>[1];
+  }>;
 } {
   const created: CreateImportedGifInput[] = [];
+  const updated: Array<{
+    id: string;
+    data: Parameters<GifStorage["updateGiphyMetadata"]>[1];
+  }> = [];
 
   return {
     created,
+    updated,
     service: {
       async listApproved() {
         return options.approvedGifs;
       },
       async findByProviderGifId() {
-        return null;
+        return options.existingGif ?? null;
       },
       async createImportedGif(input) {
         created.push(input);
@@ -322,10 +434,15 @@ function createFakeStorage(options: {
           id: `stored-${input.providerGifId}`
         });
       },
-      async updateGiphyMetadata(id) {
-        return storedGif({
+      async updateGiphyMetadata(id, data) {
+        updated.push({
           id,
-          status: "approved"
+          data
+        });
+        return storedGif({
+          ...options.existingGif,
+          id,
+          status: data.status ?? options.existingGif?.status ?? "approved"
         });
       },
       async incrementUsage() {

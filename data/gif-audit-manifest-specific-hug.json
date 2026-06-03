@@ -1,0 +1,49 @@
+{
+  "runId": "2026-06-03T03-00-35-485Z",
+  "createdAt": "2026-06-03T03:00:35.485Z",
+  "attempts": "specific",
+  "samples": [
+    {
+      "sampleId": "hug-t1-1-mpxhbd3e",
+      "action": "hug",
+      "category": "carinho_fofo",
+      "attempt": 1,
+      "searchTerm": "anime hug gif",
+      "provider": "giphy",
+      "providerGifId": "5eyhBKLvYhafu",
+      "title": "sad angel beats GIF",
+      "pageUrl": "https://giphy.com/gifs/sad-hug-5eyhBKLvYhafu",
+      "mediaUrl": "https://media2.giphy.com/media/v1.Y2lkPTQ2ZmM4OGE1MWlzcGJvYmlydTR5bXRheXhtZWFjMmthMGE1anphbHA2dWlseDh1byZlcD12MV9naWZzX3NlYXJjaCZjdD1n/5eyhBKLvYhafu/giphy.gif",
+      "metadataStatus": "rejected",
+      "motivo": "metadados nao indicam anime"
+    },
+    {
+      "sampleId": "hug-t2-1-mpxhc880",
+      "action": "hug",
+      "category": "carinho_fofo",
+      "attempt": 2,
+      "searchTerm": "anime comforting hug",
+      "provider": "giphy",
+      "providerGifId": "ypVXtGhMYkonY2ERAK",
+      "title": "Hana Sparkling Eyes GIF by Persona",
+      "pageUrl": "https://giphy.com/gifs/PersonaJourney-chibi-anime-girl-toddler-hug-peach-pajamas-ypVXtGhMYkonY2ERAK",
+      "mediaUrl": "https://media1.giphy.com/media/v1.Y2lkPTQ2ZmM4OGE1bmllanZvcG12Y3VlZ2Vpdm9zeDR6ajgwcnlobndmNWkxNHVocnhlcyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/ypVXtGhMYkonY2ERAK/giphy.gif",
+      "metadataStatus": "candidate",
+      "motivo": "metadados batem com anime e acao"
+    },
+    {
+      "sampleId": "hug-t3-1-mpxhd3bp",
+      "action": "hug",
+      "category": "carinho_fofo",
+      "attempt": 3,
+      "searchTerm": "anime friends hug",
+      "provider": "giphy",
+      "providerGifId": "s9tiNjs8sQkY5n6okF",
+      "title": "Yuri Hug GIF",
+      "pageUrl": "https://giphy.com/gifs/chisato-lycoris-recoil-takina-inoue-s9tiNjs8sQkY5n6okF",
+      "mediaUrl": "https://media2.giphy.com/media/v1.Y2lkPTQ2ZmM4OGE1MXYxZDBscGE5MnpuN3NobW5namM0OXhjd3ZpeGR4cnBqbG5zbGI2eiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/s9tiNjs8sQkY5n6okF/giphy.gif",
+      "metadataStatus": "rejected",
+      "motivo": "metadados nao indicam anime"
+    }
+  ]
+}

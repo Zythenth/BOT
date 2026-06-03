@@ -34,10 +34,12 @@ export interface GifRatioService {
 
 export interface GifRatioServiceOptions {
   random?: () => number;
+  minApprovedBeforeDatabase?: number;
 }
 
 export function createGifRatioService(options: GifRatioServiceOptions = {}): GifRatioService {
   const random = options.random ?? Math.random;
+  const minApprovedBeforeDatabase = options.minApprovedBeforeDatabase ?? 5;
 
   function getRatioForApprovedCount(approvedCount: number): GifRatioResult {
     const bucket = getRatioBucketForApprovedCount(approvedCount);
@@ -70,6 +72,7 @@ export function createGifRatioService(options: GifRatioServiceOptions = {}): Gif
         approvedCount,
         databaseRatio: ratio.databaseRatio,
         canUseGiphy: options.canUseGiphy,
+        minApprovedBeforeDatabase,
         random
       });
 
@@ -98,13 +101,14 @@ function chooseSource(input: {
   approvedCount: number;
   databaseRatio: number;
   canUseGiphy: boolean;
+  minApprovedBeforeDatabase: number;
   random: () => number;
 }): GifSourceChoice {
   if (!input.canUseGiphy) {
     return "database";
   }
 
-  if (input.approvedCount <= 0) {
+  if (input.approvedCount < input.minApprovedBeforeDatabase) {
     return "giphy";
   }
 

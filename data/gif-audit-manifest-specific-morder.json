@@ -1,0 +1,49 @@
+{
+  "runId": "2026-06-03T03-13-28-593Z",
+  "createdAt": "2026-06-03T03:13:28.594Z",
+  "attempts": "specific",
+  "samples": [
+    {
+      "sampleId": "morder-t1-1-mpxhrxiv",
+      "action": "morder",
+      "category": "brincadeira",
+      "attempt": 1,
+      "searchTerm": "anime bite gif",
+      "provider": "giphy",
+      "providerGifId": "69159EHgBoG08",
+      "title": "cat humor GIF",
+      "pageUrl": "https://giphy.com/gifs/cat-funny-reaction-69159EHgBoG08",
+      "mediaUrl": "https://media4.giphy.com/media/v1.Y2lkPTQ2ZmM4OGE1YW8wcGU3djY4bDJqdWlzMnk2Y2U1MTFqOXJlaGFzZGFrajR2MG80ayZlcD12MV9naWZzX3NlYXJjaCZjdD1n/69159EHgBoG08/giphy.gif",
+      "metadataStatus": "rejected",
+      "motivo": "metadados nao indicam anime"
+    },
+    {
+      "sampleId": "morder-t2-1-mpxhssnc",
+      "action": "morder",
+      "category": "brincadeira",
+      "attempt": 2,
+      "searchTerm": "playful anime bite",
+      "provider": "giphy",
+      "providerGifId": "bAtWPNDebpzBm",
+      "title": "dog playing GIF",
+      "pageUrl": "https://giphy.com/gifs/animated-dog-bAtWPNDebpzBm",
+      "mediaUrl": "https://media2.giphy.com/media/v1.Y2lkPTQ2ZmM4OGE1Y3V1aWxnb212Z2M4bWNjN2IxYXZlczd5ajE3cG1ucGNlYThvZ2x6eSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/bAtWPNDebpzBm/giphy.gif",
+      "metadataStatus": "rejected",
+      "motivo": "metadados nao indicam anime"
+    },
+    {
+      "sampleId": "morder-t3-1-mpxhtnr9",
+      "action": "morder",
+      "category": "brincadeira",
+      "attempt": 3,
+      "searchTerm": "anime cute bite gif",
+      "provider": "giphy",
+      "providerGifId": "xUA7b0XffFzOQkFpWo",
+      "title": "voting turn up GIF by Jelly London",
+      "pageUrl": "https://giphy.com/gifs/funny-animation-cute-xUA7b0XffFzOQkFpWo",
+      "mediaUrl": "https://media4.giphy.com/media/v1.Y2lkPTQ2ZmM4OGE1N3ZpcHBxcGR4dWp6NjJoMHU5MGFjaXlqcnl6ZXBxZTBsMnN2NnJpcCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/xUA7b0XffFzOQkFpWo/giphy.gif",
+      "metadataStatus": "rejected",
+      "motivo": "metadados nao indicam anime"
+    }
+  ]
+}

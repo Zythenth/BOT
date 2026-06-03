@@ -15,6 +15,7 @@ export interface UpdateGiphyMetadataInput {
   rating?: string;
   searchTerm?: string;
   giphyPageUrl?: string;
+  status?: GifStatus;
 }
 
 export interface ListGifFilters extends ListOptions {

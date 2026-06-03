@@ -60,6 +60,7 @@ export interface GifStorage {
       rating?: string;
       giphyPageUrl?: string;
       searchTerm?: string;
+      status?: GifStatus;
     }
   ): Promise<StoredGifLike>;
   incrementUsage(gifId: string, usedAt: Date): Promise<void>;
@@ -125,7 +126,8 @@ export function createGifService(
         storage,
         searchTerms: searchTermsForAction,
         allowUncategorizedGifs: config.allowUncategorizedGifs,
-        matchKeywords: getActionResultKeywords(request.action)
+        matchKeywords: getActionResultKeywords(request.action),
+        requireAnimeKeywords: true
       });
 
       if (searchedGif.selection) {
@@ -148,7 +150,8 @@ export function createGifService(
         storage,
         searchTerms: fallbackSearchTerms,
         allowUncategorizedGifs: config.allowUncategorizedGifs,
-        matchKeywords: []
+        matchKeywords: [],
+        requireAnimeKeywords: false
       });
 
       if (fallbackSearchedGif.selection) {
@@ -234,7 +237,6 @@ async function upsertImportedGif(input: {
   request: GifSelectionRequest;
   giphyGif: GiphyGif;
   searchTerm: string;
-  allowUncategorizedGifs: boolean;
 }, storage: GifStorage): Promise<StoredGifLike> {
   const existingGif = await storage.findByProviderGifId(
     input.giphyGif.provider,
@@ -242,10 +244,15 @@ async function upsertImportedGif(input: {
   );
 
   if (existingGif) {
+    const shouldAutoApproveExistingGif =
+      (existingGif.status === "uncategorized" || existingGif.status === "pending") &&
+      canUseStoredGif(existingGif, input.request, true);
+
     return storage.updateGiphyMetadata(existingGif.id, {
       rating: input.giphyGif.rating,
       giphyPageUrl: input.giphyGif.pageUrl,
-      searchTerm: input.searchTerm
+      searchTerm: input.searchTerm,
+      status: shouldAutoApproveExistingGif ? "approved" : undefined
     });
   }
 
@@ -255,7 +262,7 @@ async function upsertImportedGif(input: {
     providerGifId: input.giphyGif.providerGifId,
     action: input.request.action,
     category: input.request.category,
-    status: input.allowUncategorizedGifs ? "uncategorized" : "pending",
+    status: "approved",
     rating: input.giphyGif.rating ?? "pg",
     searchTerm: input.searchTerm,
     giphyPageUrl: input.giphyGif.pageUrl,
@@ -270,6 +277,7 @@ async function searchAnimeGif(input: {
   searchTerms: readonly string[];
   allowUncategorizedGifs: boolean;
   matchKeywords: readonly string[];
+  requireAnimeKeywords: boolean;
 }): Promise<{
   selection?: ActionGifSelection;
   reason?: string;
@@ -325,7 +333,9 @@ async function searchAnimeGif(input: {
 
     giphyResultCount += result.gifs.length;
 
-    const animeGifs = filterAnimeGifs(result.gifs);
+    const animeGifs = input.requireAnimeKeywords
+      ? filterAnimeGifs(result.gifs)
+      : filterBlockedGifs(result.gifs);
     animeResultCount += animeGifs.length;
 
     const matchingGifs =
@@ -343,8 +353,7 @@ async function searchAnimeGif(input: {
     const storedGif = await upsertImportedGif({
       request: input.request,
       giphyGif,
-      searchTerm,
-      allowUncategorizedGifs: input.allowUncategorizedGifs
+      searchTerm
     }, input.storage);
 
     if (!canUseStoredGif(storedGif, input.request, input.allowUncategorizedGifs)) {
@@ -497,6 +506,13 @@ function filterAnimeGifs(gifs: readonly GiphyGif[]): GiphyGif[] {
   });
 }
 
+function filterBlockedGifs(gifs: readonly GiphyGif[]): GiphyGif[] {
+  return gifs.filter((gif) => {
+    const searchableText = getSearchableGifText(gif);
+    return !BLOCKED_RESULT_KEYWORDS.some((keyword) => includesNormalizedKeyword(searchableText, keyword));
+  });
+}
+
 function filterGifsByKeywords(
   gifs: readonly GiphyGif[],
   keywords: readonly string[]
@@ -571,6 +587,15 @@ const ANIME_RESULT_KEYWORDS = [
   "sailor moon",
   "fruits-basket",
   "fruits basket",
+  "kimi-ni-todoke",
+  "kimi ni todoke",
+  "kaguya-sama",
+  "kaguya sama",
+  "maid-sama",
+  "maid sama",
+  "umamusume",
+  "uma musume",
+  "chibi",
   "spy-x-family",
   "spy x family",
   "violet-evergarden",
@@ -588,7 +613,13 @@ const BLOCKED_RESULT_KEYWORDS = [
   "stable diffusion",
   "midjourney",
   "novelai",
-  "waifu diffusion"
+  "waifu diffusion",
+  "gif by persona",
+  "cat humor",
+  "dog playing",
+  "voting turn up",
+  "jelly london",
+  "best friends animal society"
 ];
 
 const ACTION_RESULT_KEYWORDS: Record<string, readonly string[]> = {
@@ -602,11 +633,15 @@ const ACTION_RESULT_KEYWORDS: Record<string, readonly string[]> = {
   beijotesta: [
     "forehead kiss",
     "kiss forehead",
+    "kiss on forehead",
+    "forehead peck",
     "forehead"
   ],
   beijobochecha: [
     "cheek kiss",
     "kiss cheek",
+    "kiss on cheek",
+    "cheek peck",
     "cheek"
   ],
   hug: [
@@ -649,24 +684,6 @@ const ACTION_RESULT_KEYWORDS: Record<string, readonly string[]> = {
     "cheek poke"
   ]
 };
-
-const GENERIC_AFFECTION_RESULT_KEYWORDS = [
-  "hug",
-  "hugs",
-  "hugging",
-  "embrace",
-  "cuddle",
-  "comfort",
-  "comforting",
-  "headpat",
-  "head pat",
-  "pat",
-  "caring",
-  "affection",
-  "friendship",
-  "cheering up",
-  "gentle"
-];
 
 function readBoolean(name: string, fallback: boolean): boolean {
   const value = process.env[name]?.trim().toLowerCase();

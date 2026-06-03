@@ -1,0 +1,49 @@
+{
+  "runId": "2026-06-03T03-15-20-050Z",
+  "createdAt": "2026-06-03T03:15:20.051Z",
+  "attempts": "specific",
+  "samples": [
+    {
+      "sampleId": "cutucar-t1-1-mpxhuiwb",
+      "action": "cutucar",
+      "category": "brincadeira",
+      "attempt": 1,
+      "searchTerm": "anime poke gif",
+      "provider": "giphy",
+      "providerGifId": "0v6wbrDeX1wb67KuoU",
+      "title": "Chibi Yuri GIF",
+      "pageUrl": "https://giphy.com/gifs/columbina-sandrone-x-0v6wbrDeX1wb67KuoU",
+      "mediaUrl": "https://media0.giphy.com/media/v1.Y2lkPTQ2ZmM4OGE1NWU0emZ6cDNudTNicjRwdzR6ZTRrc3B6aGs0ZWQwemEya3RhNjNlbyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/0v6wbrDeX1wb67KuoU/giphy.gif",
+      "metadataStatus": "rejected",
+      "motivo": "metadados nao indicam anime"
+    },
+    {
+      "sampleId": "cutucar-t2-1-mpxhve0e",
+      "action": "cutucar",
+      "category": "brincadeira",
+      "attempt": 2,
+      "searchTerm": "anime cheek poke",
+      "provider": "giphy",
+      "providerGifId": "0H0xhd3taWF2RLGtIE",
+      "title": "Sad Fight GIF by BlueStacks",
+      "pageUrl": "https://giphy.com/gifs/BlueStacksInc-angry-poke-tease-0H0xhd3taWF2RLGtIE",
+      "mediaUrl": "https://media2.giphy.com/media/v1.Y2lkPTQ2ZmM4OGE1aXRtMjVoZmRpaXZnYWR2OXl1Z3dzZnVka2VzNzh1aGZjdXZ2eTRmZCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/0H0xhd3taWF2RLGtIE/giphy.gif",
+      "metadataStatus": "rejected",
+      "motivo": "metadados nao indicam anime"
+    },
+    {
+      "sampleId": "cutucar-t3-1-mpxhw945",
+      "action": "cutucar",
+      "category": "brincadeira",
+      "attempt": 3,
+      "searchTerm": "playful anime poke",
+      "provider": "giphy",
+      "providerGifId": "dkCDUCsPi16XLCU260",
+      "title": "Magical Girl GIF",
+      "pageUrl": "https://giphy.com/gifs/anime-girl-shoujo-dkCDUCsPi16XLCU260",
+      "mediaUrl": "https://media3.giphy.com/media/v1.Y2lkPTQ2ZmM4OGE1Zzg3ejFtZXQydmpsdWl2eWZ1eWN2Y2FqYWpwYXExZDhscHVlNW04eSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/dkCDUCsPi16XLCU260/giphy.gif",
+      "metadataStatus": "rejected",
+      "motivo": "metadados nao batem com a acao"
+    }
+  ]
+}

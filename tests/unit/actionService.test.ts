@@ -46,6 +46,7 @@ test("payload publico de RP nao mostra providerGifId, URL ou fonte do GIF em tex
   const replyOptions = toActionReplyOptions(result);
   const publicText = collectPublicReplyText(replyOptions);
 
+  assert.match(publicText, /GIF: gif-interno/);
   assert.doesNotMatch(publicText, /providerGifId/i);
   assert.doesNotMatch(publicText, /secret-provider-gif-id/i);
   assert.doesNotMatch(publicText, /https?:\/\//i);

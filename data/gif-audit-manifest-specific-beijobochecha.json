@@ -1,0 +1,49 @@
+{
+  "runId": "2026-06-03T03-04-23-495Z",
+  "createdAt": "2026-06-03T03:04:23.495Z",
+  "attempts": "specific",
+  "samples": [
+    {
+      "sampleId": "beijobochecha-t1-1-mpxhgjwg",
+      "action": "beijobochecha",
+      "category": "carinho_fofo",
+      "attempt": 1,
+      "searchTerm": "anime cheek kiss gif",
+      "provider": "giphy",
+      "providerGifId": "xTiTnhf3uB6llt3c1W",
+      "title": "animation art GIF by Eno Swinnen",
+      "pageUrl": "https://giphy.com/gifs/animation-hand-drawn-mynameiseno-xTiTnhf3uB6llt3c1W",
+      "mediaUrl": "https://media1.giphy.com/media/v1.Y2lkPTQ2ZmM4OGE1cGczcDJjbm0xbHM2bHM2enQxcnZvazE2YWtoM2pwcTVndno5dzN3ayZlcD12MV9naWZzX3NlYXJjaCZjdD1n/xTiTnhf3uB6llt3c1W/giphy.gif",
+      "metadataStatus": "rejected",
+      "motivo": "metadados nao indicam anime"
+    },
+    {
+      "sampleId": "beijobochecha-t2-1-mpxhhezw",
+      "action": "beijobochecha",
+      "category": "carinho_fofo",
+      "attempt": 2,
+      "searchTerm": "shoujo cheek kiss anime",
+      "provider": "giphy",
+      "providerGifId": "CGXNYwxCB0x2M",
+      "title": "Kiss Kiss GIF",
+      "pageUrl": "https://giphy.com/gifs/kiss-CGXNYwxCB0x2M",
+      "mediaUrl": "https://media1.giphy.com/media/v1.Y2lkPTQ2ZmM4OGE1YmJ6b2VibmZoa2d5a3VrN2JwMW1lenBhMnk3YWhhbHYyZ29zaWl6dyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/CGXNYwxCB0x2M/giphy.gif",
+      "metadataStatus": "rejected",
+      "motivo": "metadados nao indicam anime"
+    },
+    {
+      "sampleId": "beijobochecha-t3-1-mpxhia4c",
+      "action": "beijobochecha",
+      "category": "carinho_fofo",
+      "attempt": 3,
+      "searchTerm": "anime cute cheek kiss",
+      "provider": "giphy",
+      "providerGifId": "bokPNgMWyjastsVdxu",
+      "title": "Romance Love GIF by Persona",
+      "pageUrl": "https://giphy.com/gifs/PersonaJourney-kiss-cheek-blush-bokPNgMWyjastsVdxu",
+      "mediaUrl": "https://media3.giphy.com/media/v1.Y2lkPTQ2ZmM4OGE1aHpla3hzcmt1Z3RoYTVydGIwMHVraDN5anJ3NmZkb2g5cXp4d2NqMiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/bokPNgMWyjastsVdxu/giphy.gif",
+      "metadataStatus": "rejected",
+      "motivo": "metadados nao indicam anime"
+    }
+  ]
+}

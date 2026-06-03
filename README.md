@@ -76,7 +76,7 @@ Variaveis principais:
 - `GIPHY_REQUESTS_PER_HOUR`: cota persistida no SQLite por janela horaria, padrao `100`.
 - `ACTION_COOLDOWN_SECONDS`: cooldown curto anti-flood para bloquear repeticao rapida de RP, padrao `5`.
 - `ALLOW_NSFW`: mantenha `false` no MVP.
-- `ALLOW_UNCATEGORIZED_GIFS`: permite usar GIF novo ainda nao aprovado em proporcao limitada.
+- `ALLOW_UNCATEGORIZED_GIFS`: permite usar GIF antigo com status `uncategorized` quando ele ainda estiver coerente com a acao/categoria. Novos GIFs importados automaticamente ja entram como `approved`.
 
 ## Discord
 
@@ -323,7 +323,7 @@ Status de GIF:
 - `disabled`
 - `uncategorized`
 
-A resposta publica de RP nao deve mostrar fonte, URL, nome de arquivo, `providerGifId` ou qualquer identificador interno.
+A resposta publica de RP nao deve mostrar fonte, URL, nome de arquivo ou `providerGifId`. O rodape pode mostrar o `id` interno do GIF para facilitar moderacao.
 
 ## Proporcao progressiva de GIFs
 
@@ -334,6 +334,8 @@ A proporcao depende da quantidade de GIFs `approved` daquela `action/category`:
 - 50-99 aprovados: 75% banco / 25% GIPHY nova
 - 100-199 aprovados: 80% banco / 20% GIPHY nova
 - 200+ aprovados: 85% banco / 15% GIPHY nova
+
+Enquanto uma acao/categoria tiver menos de 5 GIFs aprovados e a GIPHY estiver disponivel, a Aurora prioriza novas buscas para evitar repetir sempre o mesmo GIF e popular o banco.
 
 Se a cota GIPHY acabar, o bot usa apenas GIFs `approved` do banco. Se nao houver GIF aprovado e nao puder buscar na GIPHY, a resposta deve sair apenas com texto. A cota fica persistida no SQLite em janelas horarias, entao restart do processo nao zera o contador.
 

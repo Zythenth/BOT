@@ -1,0 +1,21 @@
+{
+  "runId": "2026-06-03T03-29-42-752Z",
+  "createdAt": "2026-06-03T03:29:42.753Z",
+  "attempts": "fallback",
+  "samples": [
+    {
+      "sampleId": "beijobochecha-t4-1-mpxict1w",
+      "action": "beijobochecha",
+      "category": "carinho_fofo",
+      "attempt": 4,
+      "searchTerm": "anime affection hug gif",
+      "provider": "giphy",
+      "providerGifId": "8Op9qBNXMhXupeDNPK",
+      "title": "Pink Love GIF by Fatman",
+      "pageUrl": "https://giphy.com/gifs/Fatmancollective-fatman-fatmancollective-collective-8Op9qBNXMhXupeDNPK",
+      "mediaUrl": "https://media3.giphy.com/media/v1.Y2lkPTQ2ZmM4OGE1b2FvdXBrcjR4MHd1b2twMmZneXM3NmNld2x5YWU3bTY0b24wODZuYiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/8Op9qBNXMhXupeDNPK/giphy.gif",
+      "metadataStatus": "candidate",
+      "motivo": "fallback generico sem termo bloqueado"
+    }
+  ]
+}
