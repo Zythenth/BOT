@@ -280,4 +280,4 @@ Leia [CONTRIBUTING.md](CONTRIBUTING.md) antes de enviar uma alteração. Para fa
 
 ## Licença
 
-Este repositório ainda não possui uma licença. Isso é um bloqueio jurídico para uso, modificação e redistribuição por terceiros: a disponibilização pública do código, por si só, não concede essas permissões. O responsável pelo projeto precisa escolher e adicionar uma licença antes de promover reutilização pública.
+Este repositório ainda não possui uma licença. Isso é um bloqueio jurídico para uso, modificação e redistribuição por terceiros: a disponibilização pública do código, por si só, não concede essas permissões.
