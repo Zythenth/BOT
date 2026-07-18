@@ -1,5 +1,6 @@
 import {
   ChannelType,
+  PermissionFlagsBits,
   SlashCommandBuilder,
   type ChatInputCommandInteraction,
   type SlashCommandStringOption
@@ -22,6 +23,7 @@ export const configCommand: SlashCommandDefinition = {
   name: "config",
   description: "Configura a Aurora neste servidor.",
   data: new SlashCommandBuilder()
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .setName("config")
     .setDescription("Configura a Aurora neste servidor.")
     .setDMPermission(false)
@@ -75,7 +77,11 @@ export const configCommand: SlashCommandDefinition = {
           option
             .setName(CHANNEL_OPTION)
             .setDescription("Canal permitido para RP.")
-            .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread)
+            .addChannelTypes(
+              ChannelType.GuildText,
+              ChannelType.PublicThread,
+              ChannelType.PrivateThread
+            )
             .setRequired(true)
         )
         .addBooleanOption((option) =>

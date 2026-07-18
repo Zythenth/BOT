@@ -24,10 +24,7 @@ export const userPreferenceRepository = {
     return db.userPreference.findMany({
       where: {
         userId: { in: uniqueUserIds },
-        OR: [
-          { hideFromRankings: true },
-          { optedOutOfAffinity: true }
-        ]
+        OR: [{ hideFromRankings: true }, { optedOutOfAffinity: true }]
       },
       select: {
         userId: true

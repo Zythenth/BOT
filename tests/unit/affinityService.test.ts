@@ -70,10 +70,12 @@ test("affinityService aplica +3 para kiss como romance leve", async () => {
   assert.equal(result.scoreReason, "awarded");
 });
 
-function fakeAffinityDependencies(options: {
-  optedOutUsers?: string[];
-  initialPoints?: number;
-} = {}): AffinityServiceDependencies {
+function fakeAffinityDependencies(
+  options: {
+    optedOutUsers?: string[];
+    initialPoints?: number;
+  } = {}
+): AffinityServiceDependencies {
   let pair = {
     id: "pair-1",
     points: options.initialPoints ?? 0

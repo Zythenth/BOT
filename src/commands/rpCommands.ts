@@ -25,10 +25,7 @@ function createRpSlashCommand(definition: RpActionDefinition): SlashCommandDefin
     .setDescription(definition.description)
     .setDMPermission(false)
     .addUserOption((option) =>
-      option
-        .setName(TARGET_OPTION_NAME)
-        .setDescription("Pessoa alvo da acao.")
-        .setRequired(true)
+      option.setName(TARGET_OPTION_NAME).setDescription("Pessoa alvo da acao.").setRequired(true)
     );
 
   return {
@@ -55,10 +52,7 @@ function createGroupedRpSlashCommand(): SlashCommandDefinition {
         .setAutocomplete(true)
     )
     .addUserOption((option) =>
-      option
-        .setName(TARGET_OPTION_NAME)
-        .setDescription("Pessoa alvo da acao.")
-        .setRequired(true)
+      option.setName(TARGET_OPTION_NAME).setDescription("Pessoa alvo da acao.").setRequired(true)
     )
     .addStringOption((option) =>
       option
@@ -74,7 +68,10 @@ function createGroupedRpSlashCommand(): SlashCommandDefinition {
     data,
     async execute(interaction) {
       const rawAction = interaction.options.getString(ACTION_OPTION_NAME, true);
-      const resolvedAction = await aliasService.resolveCommandName(interaction.guildId ?? "", rawAction);
+      const resolvedAction = await aliasService.resolveCommandName(
+        interaction.guildId ?? "",
+        rawAction
+      );
       const definition = resolvedAction ? getRpActionDefinition(resolvedAction) : undefined;
 
       if (!definition) {
@@ -87,7 +84,12 @@ function createGroupedRpSlashCommand(): SlashCommandDefinition {
 
       const target = interaction.options.getUser(TARGET_OPTION_NAME, true);
       const customMessage = interaction.options.getString(MESSAGE_OPTION_NAME) ?? undefined;
-      await executeRpActionInteraction(interaction, definition, target, sanitizeCustomMessage(customMessage));
+      await executeRpActionInteraction(
+        interaction,
+        definition,
+        target,
+        sanitizeCustomMessage(customMessage)
+      );
     },
     async autocomplete(interaction) {
       await interaction.respond(buildActionAutocompleteChoices(interaction));
@@ -101,6 +103,10 @@ async function executeRpActionInteraction(
   target: NonNullable<ReturnType<ChatInputCommandInteraction["options"]["getUser"]>>,
   customMessage?: string
 ): Promise<void> {
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferReply({ ephemeral: true });
+  }
+
   const botUser = interaction.client.user;
 
   if (!botUser) {

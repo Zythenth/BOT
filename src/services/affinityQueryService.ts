@@ -1,9 +1,5 @@
 import { affinityRepository, interactionRepository, type ActionCountResult } from "../database";
-import {
-  getAffinityMilestone,
-  getRpActionStatsLabel,
-  RP_ACTION_DEFINITIONS
-} from "../config";
+import { getAffinityMilestone, getRpActionStatsLabel, RP_ACTION_DEFINITIONS } from "../config";
 import { rankingService, type AffinityRankingEntry } from "./rankingService";
 
 export interface ActionUsageCount {

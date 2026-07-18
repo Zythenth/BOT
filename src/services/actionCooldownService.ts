@@ -78,11 +78,7 @@ export function createActionCooldownService(
           since
         })
       ]);
-      const cooldownUntil = [
-        actorLatest,
-        pairLatest,
-        pairActionLatest
-      ]
+      const cooldownUntil = [actorLatest, pairLatest, pairActionLatest]
         .map((interaction) =>
           dependencies.cooldowns.getCooldownUntil({
             now: context.now,
@@ -114,9 +110,7 @@ export const actionCooldownService = createActionCooldownService();
 export function readActionCooldownSeconds(): number {
   const rawValue = Number(process.env.ACTION_COOLDOWN_SECONDS);
 
-  return Number.isInteger(rawValue) && rawValue >= 0
-    ? rawValue
-    : DEFAULT_ACTION_COOLDOWN_SECONDS;
+  return Number.isInteger(rawValue) && rawValue >= 0 ? rawValue : DEFAULT_ACTION_COOLDOWN_SECONDS;
 }
 
 function resolveCooldownMs(seconds = readActionCooldownSeconds()): number {

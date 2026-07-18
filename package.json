@@ -2,31 +2,38 @@
   "name": "aurora-bot",
   "version": "0.1.0",
   "private": true,
-  "description": "Base modular do bot privado Aurora.",
+  "description": "Bot Discord de roleplay leve com afinidade, privacidade e GIFs da GIPHY.",
   "main": "dist/index.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "test": "tsx --test tests/run-tests.ts",
     "typecheck": "tsc -p tsconfig.test.json --noEmit",
-    "lint": "node -e \"console.log('Lint ainda nao configurado nesta etapa.')\"",
+    "lint": "tsc -p tsconfig.test.json --noEmit --noUnusedLocals --noUnusedParameters --noFallthroughCasesInSwitch --noImplicitReturns",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"tools/**/*.cjs\" package.json \"tsconfig*.json\" docker-compose.yml",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"tools/**/*.cjs\" package.json \"tsconfig*.json\" docker-compose.yml",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
     "prisma": "prisma",
+    "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "node tools/prepare-database.cjs && prisma migrate deploy",
     "deploy:commands": "tsx src/deploy-commands.ts"
   },
   "engines": {
-    "node": ">=20.11.0"
+    "node": ">=22.11.0 <23"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
     "discord.js": "^14.0.0",
-    "dotenv": "^16.0.0"
+    "dotenv": "^16.0.0",
+    "prisma": "^6.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "prisma": "^6.0.0",
+    "prettier": "^3.6.2",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   }

@@ -20,7 +20,7 @@ export function buildDefaultActionPayload(
       authorLabel: displayName(context.actor, context),
       targetLabel: displayName(context.target, context),
       actionLabel: `/${context.action}`,
-      footer: buildAffinityFooter(affinity, gif),
+      footer: buildAffinityFooter(affinity),
       timestamp: context.now
     },
     components: [buildRetributeButton(context)]
@@ -106,10 +106,7 @@ function readCustomMessage(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function buildAffinityFooter(
-  affinity: ActionAffinityResult,
-  gif: ActionGifSelection | undefined
-): string | undefined {
+function buildAffinityFooter(affinity: ActionAffinityResult): string | undefined {
   const segments: string[] = [];
 
   if (affinity.pointsAwarded > 0) {
@@ -136,10 +133,6 @@ function buildAffinityFooter(
     segments.push(`Novo marco: ${affinity.milestone.name}`);
   } else if (affinity.milestone) {
     segments.push(`Marco: ${affinity.milestone.name}`);
-  }
-
-  if (gif?.id) {
-    segments.push(`GIF: ${gif.id}`);
   }
 
   return segments.length > 0 ? segments.join(" | ") : undefined;

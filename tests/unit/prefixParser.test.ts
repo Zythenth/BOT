@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  parseBotMentionPrefixCommand,
-  parsePrefixCommand
-} from "../../src/commands/prefixParser";
+import { parseBotMentionPrefixCommand, parsePrefixCommand } from "../../src/commands/prefixParser";
 
 test("parsePrefixCommand mantem prefixo configuravel", () => {
   const parsed = parsePrefixCommand("-hug <@123456789012345678>", "-");
@@ -14,10 +11,7 @@ test("parsePrefixCommand mantem prefixo configuravel", () => {
 });
 
 test("parseBotMentionPrefixCommand aceita mencao ao bot como prefixo auxiliar", () => {
-  const parsed = parseBotMentionPrefixCommand(
-    "<@999999999999999999> help",
-    "999999999999999999"
-  );
+  const parsed = parseBotMentionPrefixCommand("<@999999999999999999> help", "999999999999999999");
 
   assert.equal(parsed?.commandName, "help");
   assert.deepEqual(parsed?.args, []);

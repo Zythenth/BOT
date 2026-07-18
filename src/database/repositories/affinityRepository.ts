@@ -19,7 +19,10 @@ export interface RecordAffinityActionInput extends IncrementAffinityInput {
   pointsAwarded: number;
 }
 
-export function normalizeAffinityPair(userOneId: string, userTwoId: string): NormalizedAffinityPair {
+export function normalizeAffinityPair(
+  userOneId: string,
+  userTwoId: string
+): NormalizedAffinityPair {
   return userOneId <= userTwoId
     ? { userAId: userOneId, userBId: userTwoId }
     : { userAId: userTwoId, userBId: userOneId };
@@ -28,12 +31,7 @@ export function normalizeAffinityPair(userOneId: string, userTwoId: string): Nor
 export const affinityRepository = {
   normalizePair: normalizeAffinityPair,
 
-  findPair(
-    guildId: string,
-    userOneId: string,
-    userTwoId: string,
-    db: RepositoryClient = prisma
-  ) {
+  findPair(guildId: string, userOneId: string, userTwoId: string, db: RepositoryClient = prisma) {
     const { userAId, userBId } = normalizeAffinityPair(userOneId, userTwoId);
 
     return db.affinityPair.findUnique({
@@ -158,11 +156,7 @@ export const affinityRepository = {
   listByGuild(guildId: string, options: ListOptions = {}, db: RepositoryClient = prisma) {
     return db.affinityPair.findMany({
       where: { guildId },
-      orderBy: [
-        { points: "desc" },
-        { interactionCount: "desc" },
-        { updatedAt: "desc" }
-      ],
+      orderBy: [{ points: "desc" }, { interactionCount: "desc" }, { updatedAt: "desc" }],
       take: options.take,
       skip: options.skip
     });
@@ -201,9 +195,6 @@ export const affinityRepository = {
 
 function buildUserWhere(userId: string): Prisma.AffinityPairWhereInput {
   return {
-    OR: [
-      { userAId: userId },
-      { userBId: userId }
-    ]
+    OR: [{ userAId: userId }, { userBId: userId }]
   };
 }

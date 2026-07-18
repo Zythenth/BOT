@@ -116,10 +116,7 @@ export const interactionRepository = {
     });
   },
 
-  findLatestScoredForPairAction(
-    filters: ScoredPairActionFilters,
-    db: RepositoryClient = prisma
-  ) {
+  findLatestScoredForPairAction(filters: ScoredPairActionFilters, db: RepositoryClient = prisma) {
     return db.interaction.findFirst({
       where: {
         guildId: filters.guildId,
@@ -138,10 +135,7 @@ export const interactionRepository = {
         guildId: filters.guildId,
         pointsAwarded: { gt: 0 },
         createdAt: filters.since ? { gte: filters.since } : undefined,
-        OR: [
-          { actorUserId: filters.userId },
-          { targetUserId: filters.userId }
-        ]
+        OR: [{ actorUserId: filters.userId }, { targetUserId: filters.userId }]
       },
       orderBy: { createdAt: "desc" }
     });
@@ -207,10 +201,7 @@ export const interactionRepository = {
         guildId: filters.guildId,
         pointsAwarded: { gt: 0 },
         createdAt: filters.since ? { gte: filters.since } : undefined,
-        OR: [
-          { actorUserId: filters.userId },
-          { targetUserId: filters.userId }
-        ]
+        OR: [{ actorUserId: filters.userId }, { targetUserId: filters.userId }]
       },
       _sum: {
         pointsAwarded: true
@@ -226,10 +217,7 @@ export const interactionRepository = {
         guildId: filters.guildId,
         pointsAwarded: { gt: 0 },
         createdAt: filters.since ? { gte: filters.since } : undefined,
-        OR: [
-          { actorUserId: filters.userId },
-          { targetUserId: filters.userId }
-        ]
+        OR: [{ actorUserId: filters.userId }, { targetUserId: filters.userId }]
       }
     });
   },
@@ -267,9 +255,6 @@ export const interactionRepository = {
 
 function buildUserWhere(userId: string): Prisma.InteractionWhereInput {
   return {
-    OR: [
-      { actorUserId: userId },
-      { targetUserId: userId }
-    ]
+    OR: [{ actorUserId: userId }, { targetUserId: userId }]
   };
 }

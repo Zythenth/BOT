@@ -3,11 +3,10 @@ import { prisma } from "../prisma";
 import type { GifStatus, ListOptions, RepositoryClient } from "./types";
 import { DEFAULT_LIST_TAKE } from "./types";
 
-export interface CreateGifInput
-  extends Omit<
-    Prisma.GifUncheckedCreateInput,
-    "id" | "createdAt" | "updatedAt" | "timesUsed" | "lastUsedAt"
-  > {
+export interface CreateGifInput extends Omit<
+  Prisma.GifUncheckedCreateInput,
+  "id" | "createdAt" | "updatedAt" | "timesUsed" | "lastUsedAt"
+> {
   status?: GifStatus;
 }
 
@@ -74,10 +73,7 @@ export const gifRepository = {
 
     return db.gif.findMany({
       where,
-      orderBy: [
-        { updatedAt: "desc" },
-        { createdAt: "desc" }
-      ],
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
       take: filters.take ?? DEFAULT_LIST_TAKE,
       skip: filters.skip
     });
@@ -148,11 +144,7 @@ export const gifRepository = {
     });
   },
 
-  updateGiphyMetadata(
-    id: string,
-    data: UpdateGiphyMetadataInput,
-    db: RepositoryClient = prisma
-  ) {
+  updateGiphyMetadata(id: string, data: UpdateGiphyMetadataInput, db: RepositoryClient = prisma) {
     return db.gif.update({
       where: { id },
       data

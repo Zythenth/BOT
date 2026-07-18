@@ -29,7 +29,10 @@ export interface GifRatioDecision extends GifRatioResult {
 export interface GifRatioService {
   getRatioForApprovedCount(approvedCount: number): GifRatioResult;
   countApproved(request: GifRatioRequest): Promise<number>;
-  decideSource(request: GifRatioRequest, options: GifRatioDecisionOptions): Promise<GifRatioDecision>;
+  decideSource(
+    request: GifRatioRequest,
+    options: GifRatioDecisionOptions
+  ): Promise<GifRatioDecision>;
 }
 
 export interface GifRatioServiceOptions {

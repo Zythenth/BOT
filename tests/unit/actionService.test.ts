@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { APIEmbed } from "discord.js";
 import { toActionReplyOptions } from "../../src/commands/actionResponseAdapter";
-import { createActionService, type ActionServiceDependencies } from "../../src/services/actionService";
+import {
+  createActionService,
+  type ActionServiceDependencies
+} from "../../src/services/actionService";
 import type { ActionContext, ActionSource } from "../../src/types";
 
 test("actionService centraliza slash, prefix e botao na mesma execucao", async () => {
@@ -10,8 +13,13 @@ test("actionService centraliza slash, prefix e botao na mesma execucao", async (
   const executedSources: ActionSource[] = [];
   const service = createActionService({
     ...safeDependencies(),
-    async saveHistory(context) {
+    async persistAction(context) {
       executedSources.push(context.source);
+      return {
+        pointsAwarded: 2,
+        totalPoints: 2,
+        scoreReason: "awarded"
+      };
     }
   });
 
@@ -25,16 +33,18 @@ test("actionService centraliza slash, prefix e botao na mesma execucao", async (
 });
 
 test("payload publico de RP nao mostra providerGifId, URL ou fonte do GIF em texto", async () => {
-  const service = createActionService(safeDependencies({
-    async selectGif() {
-      return {
-        id: "gif-interno",
-        provider: "giphy",
-        providerGifId: "secret-provider-gif-id",
-        imageUrl: "https://media.giphy.com/media/secret-provider-gif-id/giphy.gif"
-      };
-    }
-  }));
+  const service = createActionService(
+    safeDependencies({
+      async selectGif() {
+        return {
+          id: "gif-interno",
+          provider: "giphy",
+          providerGifId: "secret-provider-gif-id",
+          imageUrl: "https://media.giphy.com/media/secret-provider-gif-id/giphy.gif"
+        };
+      }
+    })
+  );
   const result = await service.execute(actionContext("slash"));
 
   assert.equal(result.ok, true);
@@ -46,7 +56,7 @@ test("payload publico de RP nao mostra providerGifId, URL ou fonte do GIF em tex
   const replyOptions = toActionReplyOptions(result);
   const publicText = collectPublicReplyText(replyOptions);
 
-  assert.match(publicText, /GIF: gif-interno/);
+  assert.doesNotMatch(publicText, /gif-interno/i);
   assert.doesNotMatch(publicText, /providerGifId/i);
   assert.doesNotMatch(publicText, /secret-provider-gif-id/i);
   assert.doesNotMatch(publicText, /https?:\/\//i);
@@ -79,15 +89,12 @@ function safeDependencies(
     async selectGif() {
       return undefined;
     },
-    async calculateAffinity() {
+    async persistAction() {
       return {
         pointsAwarded: 2,
         totalPoints: 2,
         scoreReason: "awarded"
       };
-    },
-    async saveHistory() {
-      return undefined;
     },
     ...overrides
   };
@@ -130,13 +137,7 @@ function collectPublicReplyText(replyOptions: ReturnType<typeof toActionReplyOpt
   const fields = embedJson?.fields?.flatMap((field) => [field.name, field.value]) ?? [];
   const footer = embedJson?.footer?.text;
 
-  return [
-    replyOptions.content,
-    embedJson?.title,
-    embedJson?.description,
-    footer,
-    ...fields
-  ]
+  return [replyOptions.content, embedJson?.title, embedJson?.description, footer, ...fields]
     .filter((value): value is string => typeof value === "string")
     .join(" ");
 }

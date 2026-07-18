@@ -1,4 +1,5 @@
 import {
+  PermissionFlagsBits,
   SlashCommandBuilder,
   type ChatInputCommandInteraction,
   type SlashCommandStringOption
@@ -36,8 +37,12 @@ export const gifAdminSlashCommands: SlashCommandDefinition[] = [
   createGifTestCommand()
 ];
 
+function createAdminSlashCommandBuilder(): SlashCommandBuilder {
+  return new SlashCommandBuilder().setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
+}
+
 function createGifAddCommand(): SlashCommandDefinition {
-  const data = new SlashCommandBuilder()
+  const data = createAdminSlashCommandBuilder()
     .setName("gifadd")
     .setDescription("Adiciona um GIF manualmente para moderacao.")
     .setDMPermission(false)
@@ -48,7 +53,9 @@ function createGifAddCommand(): SlashCommandDefinition {
         .setRequired(true)
     )
     .addStringOption((option) =>
-      addActionChoices(option.setName(ACTION_OPTION).setDescription("Acao do GIF.").setRequired(true))
+      addActionChoices(
+        option.setName(ACTION_OPTION).setDescription("Acao do GIF.").setRequired(true)
+      )
     )
     .addStringOption((option) =>
       addCategoryChoices(
@@ -56,13 +63,19 @@ function createGifAddCommand(): SlashCommandDefinition {
       )
     )
     .addStringOption((option) =>
-      addProviderChoices(option.setName(PROVIDER_OPTION).setDescription("Provider do GIF.").setRequired(false))
+      addProviderChoices(
+        option.setName(PROVIDER_OPTION).setDescription("Provider do GIF.").setRequired(false)
+      )
     )
     .addStringOption((option) =>
-      addStatusChoices(option.setName(STATUS_OPTION).setDescription("Status inicial.").setRequired(false))
+      addStatusChoices(
+        option.setName(STATUS_OPTION).setDescription("Status inicial.").setRequired(false)
+      )
     )
     .addStringOption((option) =>
-      addRatingChoices(option.setName(RATING_OPTION).setDescription("Rating do GIF.").setRequired(false))
+      addRatingChoices(
+        option.setName(RATING_OPTION).setDescription("Rating do GIF.").setRequired(false)
+      )
     )
     .addStringOption((option) =>
       option
@@ -71,7 +84,11 @@ function createGifAddCommand(): SlashCommandDefinition {
         .setRequired(false)
     )
     .addStringOption((option) =>
-      option.setName(NOTES_OPTION).setDescription("Notas internas.").setRequired(false).setMaxLength(500)
+      option
+        .setName(NOTES_OPTION)
+        .setDescription("Notas internas.")
+        .setRequired(false)
+        .setMaxLength(500)
     );
 
   return {
@@ -106,7 +123,7 @@ function createGifAddCommand(): SlashCommandDefinition {
 }
 
 function createGifSearchCommand(): SlashCommandDefinition {
-  const data = new SlashCommandBuilder()
+  const data = createAdminSlashCommandBuilder()
     .setName("gifbuscar")
     .setDescription("Busca GIFs na GIPHY e salva no banco para moderacao.")
     .setDMPermission(false)
@@ -118,7 +135,9 @@ function createGifSearchCommand(): SlashCommandDefinition {
         .setMaxLength(100)
     )
     .addStringOption((option) =>
-      addActionChoices(option.setName(ACTION_OPTION).setDescription("Acao para salvar.").setRequired(true))
+      addActionChoices(
+        option.setName(ACTION_OPTION).setDescription("Acao para salvar.").setRequired(true)
+      )
     )
     .addStringOption((option) =>
       addCategoryChoices(
@@ -134,7 +153,9 @@ function createGifSearchCommand(): SlashCommandDefinition {
         .setRequired(false)
     )
     .addStringOption((option) =>
-      addStatusChoices(option.setName(STATUS_OPTION).setDescription("Status inicial.").setRequired(false))
+      addStatusChoices(
+        option.setName(STATUS_OPTION).setDescription("Status inicial.").setRequired(false)
+      )
     );
 
   return {
@@ -166,7 +187,7 @@ function createGifSearchCommand(): SlashCommandDefinition {
 }
 
 function createGifApproveCommand(): SlashCommandDefinition {
-  const data = new SlashCommandBuilder()
+  const data = createAdminSlashCommandBuilder()
     .setName("gifaprovar")
     .setDescription("Aprova um GIF para uso em RP.")
     .setDMPermission(false)
@@ -174,7 +195,11 @@ function createGifApproveCommand(): SlashCommandDefinition {
       option.setName(GIF_ID_OPTION).setDescription("ID interno do GIF.").setRequired(true)
     )
     .addStringOption((option) =>
-      option.setName(NOTES_OPTION).setDescription("Notas internas.").setRequired(false).setMaxLength(500)
+      option
+        .setName(NOTES_OPTION)
+        .setDescription("Notas internas.")
+        .setRequired(false)
+        .setMaxLength(500)
     );
 
   return {
@@ -197,7 +222,7 @@ function createGifApproveCommand(): SlashCommandDefinition {
 }
 
 function createGifBlockCommand(): SlashCommandDefinition {
-  const data = new SlashCommandBuilder()
+  const data = createAdminSlashCommandBuilder()
     .setName("gifbloquear")
     .setDescription("Bloqueia um GIF para impedir uso em RP.")
     .setDMPermission(false)
@@ -205,7 +230,11 @@ function createGifBlockCommand(): SlashCommandDefinition {
       option.setName(GIF_ID_OPTION).setDescription("ID interno do GIF.").setRequired(true)
     )
     .addStringOption((option) =>
-      option.setName(NOTES_OPTION).setDescription("Motivo interno.").setRequired(false).setMaxLength(500)
+      option
+        .setName(NOTES_OPTION)
+        .setDescription("Motivo interno.")
+        .setRequired(false)
+        .setMaxLength(500)
     );
 
   return {
@@ -228,7 +257,7 @@ function createGifBlockCommand(): SlashCommandDefinition {
 }
 
 function createGifRemoveCommand(): SlashCommandDefinition {
-  const data = new SlashCommandBuilder()
+  const data = createAdminSlashCommandBuilder()
     .setName("gifremove")
     .setDescription("Desativa um GIF logicamente.")
     .setDMPermission(false)
@@ -236,7 +265,11 @@ function createGifRemoveCommand(): SlashCommandDefinition {
       option.setName(GIF_ID_OPTION).setDescription("ID interno do GIF.").setRequired(true)
     )
     .addStringOption((option) =>
-      option.setName(NOTES_OPTION).setDescription("Notas internas.").setRequired(false).setMaxLength(500)
+      option
+        .setName(NOTES_OPTION)
+        .setDescription("Notas internas.")
+        .setRequired(false)
+        .setMaxLength(500)
     );
 
   return {
@@ -259,7 +292,7 @@ function createGifRemoveCommand(): SlashCommandDefinition {
 }
 
 function createGifMoveCommand(): SlashCommandDefinition {
-  const data = new SlashCommandBuilder()
+  const data = createAdminSlashCommandBuilder()
     .setName("gifmover")
     .setDescription("Move um GIF para outra action e/ou category.")
     .setDMPermission(false)
@@ -267,10 +300,14 @@ function createGifMoveCommand(): SlashCommandDefinition {
       option.setName(GIF_ID_OPTION).setDescription("ID interno do GIF.").setRequired(true)
     )
     .addStringOption((option) =>
-      addActionChoices(option.setName(ACTION_OPTION).setDescription("Nova acao.").setRequired(false))
+      addActionChoices(
+        option.setName(ACTION_OPTION).setDescription("Nova acao.").setRequired(false)
+      )
     )
     .addStringOption((option) =>
-      addCategoryChoices(option.setName(CATEGORY_OPTION).setDescription("Nova categoria.").setRequired(false))
+      addCategoryChoices(
+        option.setName(CATEGORY_OPTION).setDescription("Nova categoria.").setRequired(false)
+      )
     );
 
   return {
@@ -299,21 +336,29 @@ function createGifMoveCommand(): SlashCommandDefinition {
 }
 
 function createGifListCommand(): SlashCommandDefinition {
-  const data = new SlashCommandBuilder()
+  const data = createAdminSlashCommandBuilder()
     .setName("giflist")
     .setDescription("Lista GIFs cadastrados com filtros.")
     .setDMPermission(false)
     .addStringOption((option) =>
-      addActionChoices(option.setName(ACTION_OPTION).setDescription("Filtrar por acao.").setRequired(false))
+      addActionChoices(
+        option.setName(ACTION_OPTION).setDescription("Filtrar por acao.").setRequired(false)
+      )
     )
     .addStringOption((option) =>
-      addCategoryChoices(option.setName(CATEGORY_OPTION).setDescription("Filtrar por categoria.").setRequired(false))
+      addCategoryChoices(
+        option.setName(CATEGORY_OPTION).setDescription("Filtrar por categoria.").setRequired(false)
+      )
     )
     .addStringOption((option) =>
-      addStatusChoices(option.setName(STATUS_OPTION).setDescription("Filtrar por status.").setRequired(false))
+      addStatusChoices(
+        option.setName(STATUS_OPTION).setDescription("Filtrar por status.").setRequired(false)
+      )
     )
     .addStringOption((option) =>
-      addProviderChoices(option.setName(PROVIDER_OPTION).setDescription("Filtrar por provider.").setRequired(false))
+      addProviderChoices(
+        option.setName(PROVIDER_OPTION).setDescription("Filtrar por provider.").setRequired(false)
+      )
     )
     .addIntegerOption((option) =>
       option
@@ -354,15 +399,19 @@ function createGifListCommand(): SlashCommandDefinition {
 }
 
 function createGifTestCommand(): SlashCommandDefinition {
-  const data = new SlashCommandBuilder()
+  const data = createAdminSlashCommandBuilder()
     .setName("giftest")
     .setDescription("Testa o sorteio real de GIF para action/category.")
     .setDMPermission(false)
     .addStringOption((option) =>
-      addActionChoices(option.setName(ACTION_OPTION).setDescription("Acao do teste.").setRequired(true))
+      addActionChoices(
+        option.setName(ACTION_OPTION).setDescription("Acao do teste.").setRequired(true)
+      )
     )
     .addStringOption((option) =>
-      addCategoryChoices(option.setName(CATEGORY_OPTION).setDescription("Categoria do teste.").setRequired(true))
+      addCategoryChoices(
+        option.setName(CATEGORY_OPTION).setDescription("Categoria do teste.").setRequired(true)
+      )
     );
 
   return {
@@ -412,7 +461,10 @@ function readGifStatusChangeInput(interaction: ChatInputCommandInteraction) {
   };
 }
 
-function readAction(interaction: ChatInputCommandInteraction, required: boolean): ActionName | undefined {
+function readAction(
+  interaction: ChatInputCommandInteraction,
+  required: boolean
+): ActionName | undefined {
   const value = required
     ? interaction.options.getString(ACTION_OPTION, true)
     : interaction.options.getString(ACTION_OPTION);

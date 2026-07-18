@@ -37,7 +37,9 @@ export function buildGifSearchEmbed(
   const created = result.data.items.filter((item) => item.created).length;
 
   return baseEmbed("Busca de GIFs", SUCCESS_COLOR)
-    .setDescription(`${result.message} Novos: ${created}. Duplicados: ${result.data.duplicateCount}.`)
+    .setDescription(
+      `${result.message} Novos: ${created}. Duplicados: ${result.data.duplicateCount}.`
+    )
     .addFields({
       name: "Resultados",
       value: formatImportedGifs(result.data.items)
@@ -82,10 +84,7 @@ export function buildGifTestEmbed(result: GifModerationResult<GifTestResult>): E
 }
 
 function baseEmbed(title: string, color: ColorResolvable): EmbedBuilder {
-  return new EmbedBuilder()
-    .setColor(color)
-    .setTitle(title)
-    .setTimestamp(new Date());
+  return new EmbedBuilder().setColor(color).setTitle(title).setTimestamp(new Date());
 }
 
 function formatGifFields(gif: Gif) {
@@ -128,13 +127,15 @@ function formatImportedGifs(items: ImportedGifSummary[]): string {
     return "Nenhum resultado retornado.";
   }
 
-  return truncateFieldValue(items
-    .slice(0, 10)
-    .map((item, index) => {
-      const marker = item.created ? "novo" : "duplicado";
-      return `${index + 1}. \`${item.gif.id}\` (${marker}) - ${item.gif.action}/${item.gif.category} - ${item.gif.status} - \`${item.gif.providerGifId}\``;
-    })
-    .join("\n"));
+  return truncateFieldValue(
+    items
+      .slice(0, 10)
+      .map((item, index) => {
+        const marker = item.created ? "novo" : "duplicado";
+        return `${index + 1}. \`${item.gif.id}\` (${marker}) - ${item.gif.action}/${item.gif.category} - ${item.gif.status} - \`${item.gif.providerGifId}\``;
+      })
+      .join("\n")
+  );
 }
 
 function formatGifRowFields(gifs: Gif[]) {
@@ -160,7 +161,9 @@ function formatGifRowFields(gifs: Gif[]) {
   }));
 }
 
-function formatFilters(filters: Pick<ListModerationGifsInput, "action" | "category" | "status" | "provider">): string {
+function formatFilters(
+  filters: Pick<ListModerationGifsInput, "action" | "category" | "status" | "provider">
+): string {
   const activeFilters = [
     filters.action ? `action=${filters.action}` : undefined,
     filters.category ? `category=${filters.category}` : undefined,

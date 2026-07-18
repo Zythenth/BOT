@@ -2,20 +2,21 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { PermissionFlagsBits } from "discord.js";
 import { slashCommands } from "../../src/commands";
 import { RP_ACTION_DEFINITIONS } from "../../src/config";
 
 test("comandos de RP delegam regra critica para services", () => {
-  const files = [
-    "src/commands/rpCommands.ts",
-    "src/commands/prefixCommands.ts"
-  ];
+  const files = ["src/commands/rpCommands.ts", "src/commands/prefixCommands.ts"];
 
   for (const file of files) {
     const source = readFileSync(path.resolve(process.cwd(), file), "utf8");
 
     assert.match(source, /actionService\.execute/);
-    assert.doesNotMatch(source, /gifRepository|affinityRepository|providerGifId|giphyProviderService|Prisma/);
+    assert.doesNotMatch(
+      source,
+      /gifRepository|affinityRepository|providerGifId|giphyProviderService|Prisma/
+    );
   }
 });
 
@@ -36,6 +37,35 @@ test("comandos de dados proprios existem", () => {
   assert.ok(slashCommands.has("meusdados"));
   assert.ok(slashCommands.has("exportardados"));
   assert.ok(slashCommands.has("apagardados"));
+});
+
+test("comandos administrativos exigem Gerenciar Servidor por padrao", () => {
+  const administrativeCommands = [
+    "config",
+    "gifadd",
+    "gifbuscar",
+    "gifaprovar",
+    "gifbloquear",
+    "gifremove",
+    "gifmover",
+    "giflist",
+    "giftest",
+    "fraseadd",
+    "fraseremove",
+    "fraselist"
+  ];
+
+  for (const commandName of administrativeCommands) {
+    const command = slashCommands.get(commandName);
+
+    assert.ok(command, `Comando ausente: ${commandName}`);
+    const commandJson = command.data.toJSON() as { default_member_permissions?: string };
+    assert.equal(
+      commandJson.default_member_permissions,
+      PermissionFlagsBits.ManageGuild.toString(),
+      `Permissao padrao incorreta: ${commandName}`
+    );
+  }
 });
 
 test("dados base mantem kiss separado dos beijos de testa e bochecha", () => {

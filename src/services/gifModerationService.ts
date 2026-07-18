@@ -1,9 +1,5 @@
 import type { Gif } from "@prisma/client";
-import {
-  gifRepository,
-  guildRepository,
-  type GifStatus
-} from "../database";
+import { gifRepository, guildRepository, type GifStatus } from "../database";
 import type { ActionCategory, ActionGifSelection, ActionName } from "../types";
 import { ADMIN_LOG_ACTIONS, adminLogService } from "./adminLogService";
 import { gifService } from "./gifService";
@@ -118,11 +114,16 @@ export const gifModerationService = {
     if (existingGif) {
       const isSameGuild = existingGif.guildId === input.guildId;
 
-      await logGifAdminAction(input, ADMIN_LOG_ACTIONS.GIF_ADD, isSameGuild ? existingGif.id : undefined, {
-        provider,
-        providerGifId,
-        outcome: isSameGuild ? "duplicate" : "global_duplicate"
-      });
+      await logGifAdminAction(
+        input,
+        ADMIN_LOG_ACTIONS.GIF_ADD,
+        isSameGuild ? existingGif.id : undefined,
+        {
+          provider,
+          providerGifId,
+          outcome: isSameGuild ? "duplicate" : "global_duplicate"
+        }
+      );
 
       if (!isSameGuild) {
         return {
@@ -419,7 +420,7 @@ export const gifModerationService = {
       addedBy: input.actorUserId
     });
     const storedGif = selection?.id
-      ? (await gifRepository.findById(selection.id)) ?? undefined
+      ? ((await gifRepository.findById(selection.id)) ?? undefined)
       : undefined;
 
     await logGifAdminAction(input, ADMIN_LOG_ACTIONS.GIF_TEST, selection?.id, {

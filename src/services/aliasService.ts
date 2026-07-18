@@ -41,7 +41,9 @@ const BUILT_IN_ALIASES: Record<string, string> = {
   cutucao: "cutucar"
 };
 
-export function createAliasService(repository: AliasRepositoryLike = aliasRepository): AliasService {
+export function createAliasService(
+  repository: AliasRepositoryLike = aliasRepository
+): AliasService {
   return {
     normalizeAlias,
 

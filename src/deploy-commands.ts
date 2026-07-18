@@ -1,16 +1,16 @@
 import { REST, Routes } from "discord.js";
-import { slashCommands } from "./commands";
 import { assertRuntimeConfig, loadConfig } from "./config";
 import { logger } from "./utils";
 
 async function main(): Promise<void> {
+  const config = loadConfig();
+  assertRuntimeConfig(config);
+  const { slashCommands } = await import("./commands");
+
   if (slashCommands.size === 0) {
     logger.info("No slash commands to deploy.");
     return;
   }
-
-  const config = loadConfig();
-  assertRuntimeConfig(config);
 
   const commandData = slashCommands.map((command) => command.data.toJSON());
   const rest = new REST({ version: "10" }).setToken(config.discord.token);
@@ -20,10 +20,9 @@ async function main(): Promise<void> {
   if (devGuildId) {
     await deployWithMissingAccessHint(
       () =>
-        rest.put(
-          Routes.applicationGuildCommands(config.discord.clientId, devGuildId),
-          { body: commandData }
-        ),
+        rest.put(Routes.applicationGuildCommands(config.discord.clientId, devGuildId), {
+          body: commandData
+        }),
       "guild",
       devGuildId
     );
@@ -65,9 +64,9 @@ async function deployWithMissingAccessHint(
 function isDiscordMissingAccessError(error: unknown): boolean {
   return Boolean(
     error &&
-      typeof error === "object" &&
-      "code" in error &&
-      (error as { code?: unknown }).code === 50001
+    typeof error === "object" &&
+    "code" in error &&
+    (error as { code?: unknown }).code === 50001
   );
 }
 

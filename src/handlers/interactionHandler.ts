@@ -13,7 +13,11 @@ export function registerInteractionHandler(client: Client, config: AppConfig): v
 
       if (interaction.isAutocomplete()) {
         const command = slashCommands.get(interaction.commandName);
-        const context = getInteractionLogContext(interaction, `/${interaction.commandName}`, "slash");
+        const context = getInteractionLogContext(
+          interaction,
+          `/${interaction.commandName}`,
+          "slash"
+        );
 
         if (!command?.autocomplete) {
           logger.warn("Ignored autocomplete without handler.", context);
@@ -26,10 +30,19 @@ export function registerInteractionHandler(client: Client, config: AppConfig): v
 
       if (interaction.isChatInputCommand()) {
         const command = slashCommands.get(interaction.commandName);
-        const context = getInteractionLogContext(interaction, `/${interaction.commandName}`, "slash");
+        const context = getInteractionLogContext(
+          interaction,
+          `/${interaction.commandName}`,
+          "slash"
+        );
 
         if (!command) {
           logger.warn("Ignored unregistered slash command.", context);
+          await interaction.reply({
+            content:
+              "Este comando esta desatualizado ou indisponivel. Sincronize os slash commands.",
+            ephemeral: true
+          });
           return;
         }
 
@@ -40,6 +53,7 @@ export function registerInteractionHandler(client: Client, config: AppConfig): v
 
       if (interaction.isButton() && isRetributeButtonCustomId(interaction.customId)) {
         logger.command(getInteractionLogContext(interaction, "button:retribute", "button"));
+        await interaction.deferReply({ ephemeral: true });
         const result = await retributeService.execute(interaction);
         await replyWithActionResult(interaction, result);
       }
@@ -48,7 +62,14 @@ export function registerInteractionHandler(client: Client, config: AppConfig): v
         error,
         ...getInteractionFailureLogContext(interaction)
       });
-      await replyWithGenericInteractionError(interaction);
+      try {
+        await replyWithGenericInteractionError(interaction);
+      } catch (replyError) {
+        logger.error("Failed to send generic interaction error.", {
+          error: replyError,
+          ...getInteractionFailureLogContext(interaction)
+        });
+      }
     }
   });
 }
@@ -86,7 +107,14 @@ async function replyWithGenericInteractionError(interaction: Interaction): Promi
     return;
   }
 
-  if (interaction.replied || interaction.deferred) {
+  if (interaction.deferred && !interaction.replied) {
+    await interaction.editReply({
+      content: "Nao consegui concluir esta interacao agora."
+    });
+    return;
+  }
+
+  if (interaction.replied) {
     await interaction.followUp({
       content: "Nao consegui concluir esta interacao agora.",
       ephemeral: true

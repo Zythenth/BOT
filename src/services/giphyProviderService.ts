@@ -3,12 +3,14 @@ import { giphyQuotaRepository } from "../database";
 
 const GIPHY_API_BASE_URL = "https://api.giphy.com/v1/gifs";
 const GIPHY_PROVIDER = "giphy";
+const DEFAULT_GIPHY_TIMEOUT_MS = 10_000;
 
 export interface GiphyProviderConfig {
   apiKey?: string;
   requestsPerHour: number;
   rating: GiphyRating;
   lang: string;
+  timeoutMs?: number;
 }
 
 export interface GiphyGif {
@@ -27,11 +29,7 @@ export interface GiphySearchInput {
 }
 
 export type GiphyProviderStatus =
-  | "ok"
-  | "missing_api_key"
-  | "quota_exhausted"
-  | "provider_error"
-  | "not_found";
+  "ok" | "missing_api_key" | "quota_exhausted" | "provider_error" | "not_found";
 
 export interface GiphySearchResult {
   status: GiphyProviderStatus;
@@ -51,7 +49,11 @@ export interface GiphyQuotaSnapshot {
 }
 
 export interface GiphyQuotaStore {
-  consume(input: { provider: string; limit: number; now?: Date }): Promise<GiphyQuotaSnapshot | null>;
+  consume(input: {
+    provider: string;
+    limit: number;
+    now?: Date;
+  }): Promise<GiphyQuotaSnapshot | null>;
   snapshot(input: { provider: string; limit: number; now?: Date }): Promise<GiphyQuotaSnapshot>;
 }
 
@@ -65,7 +67,8 @@ export interface GiphyProviderService {
 
 export function createGiphyProviderService(
   config: GiphyProviderConfig,
-  quotaStore: GiphyQuotaStore = giphyQuotaRepository
+  quotaStore: GiphyQuotaStore = giphyQuotaRepository,
+  fetchImplementation: typeof fetch = fetch
 ): GiphyProviderService {
   return {
     async search(input) {
@@ -86,7 +89,9 @@ export function createGiphyProviderService(
       url.searchParams.set("lang", config.lang);
 
       try {
-        const response = await fetch(url);
+        const response = await fetchImplementation(url, {
+          signal: AbortSignal.timeout(config.timeoutMs ?? DEFAULT_GIPHY_TIMEOUT_MS)
+        });
 
         if (!response.ok) {
           return { status: "provider_error", gifs: [] };
@@ -115,7 +120,9 @@ export function createGiphyProviderService(
       url.searchParams.set("api_key", config.apiKey);
 
       try {
-        const response = await fetch(url);
+        const response = await fetchImplementation(url, {
+          signal: AbortSignal.timeout(config.timeoutMs ?? DEFAULT_GIPHY_TIMEOUT_MS)
+        });
 
         if (response.status === 404) {
           return { status: "not_found" };

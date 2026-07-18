@@ -3,9 +3,11 @@ import { prisma } from "../prisma";
 import type { RepositoryClient } from "./types";
 
 export const buttonInteractionStateRepository = {
-  create(data: Prisma.ButtonInteractionStateUncheckedCreateInput, db: RepositoryClient = prisma) {
-    return db.buttonInteractionState.create({
-      data
+  upsert(data: Prisma.ButtonInteractionStateUncheckedCreateInput, db: RepositoryClient = prisma) {
+    return db.buttonInteractionState.upsert({
+      where: { customId: data.customId },
+      create: data,
+      update: {}
     });
   },
 
@@ -44,10 +46,21 @@ export const buttonInteractionStateRepository = {
     });
   },
 
-  markUsed(customId: string, usedAt = new Date(), db: RepositoryClient = prisma) {
-    return db.buttonInteractionState.update({
-      where: { customId },
+  claim(customId: string, usedAt = new Date(), db: RepositoryClient = prisma) {
+    return db.buttonInteractionState.updateMany({
+      where: {
+        customId,
+        usedAt: null,
+        expiresAt: { gt: usedAt }
+      },
       data: { usedAt }
+    });
+  },
+
+  release(customId: string, usedAt: Date, db: RepositoryClient = prisma) {
+    return db.buttonInteractionState.updateMany({
+      where: { customId, usedAt },
+      data: { usedAt: null }
     });
   },
 
@@ -64,9 +77,6 @@ export const buttonInteractionStateRepository = {
 
 function buildUserWhere(userId: string): Prisma.ButtonInteractionStateWhereInput {
   return {
-    OR: [
-      { originalAuthorId: userId },
-      { originalTargetId: userId }
-    ]
+    OR: [{ originalAuthorId: userId }, { originalTargetId: userId }]
   };
 }

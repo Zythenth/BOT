@@ -1,4 +1,4 @@
-import type { User } from "discord.js";
+import { PermissionFlagsBits, type User } from "discord.js";
 import { RP_ACTION_DEFINITIONS, type RpActionDefinition } from "../config";
 import { actionService, affinityQueryService, rankingService } from "../services";
 import type { ActionContext, PrefixCommandDefinition, PrefixCommandContext } from "../types";
@@ -133,12 +133,32 @@ function buildPrefixActionContext(
       id: botUser.id,
       isBot: botUser.bot
     },
+    permissions: readPrefixChannelPermissions(context),
     now: new Date(),
     metadata: customMessage
       ? {
           customMessage
         }
       : undefined
+  };
+}
+
+function readPrefixChannelPermissions(context: PrefixCommandContext): ActionContext["permissions"] {
+  const botMember = context.message.guild?.members.me;
+  const channel = context.message.channel;
+
+  if (!botMember || !("permissionsFor" in channel)) {
+    return undefined;
+  }
+
+  const permissions = channel.permissionsFor(botMember);
+
+  return {
+    canSendMessages:
+      permissions?.has(PermissionFlagsBits.SendMessages) ||
+      permissions?.has(PermissionFlagsBits.SendMessagesInThreads),
+    canEmbedLinks: permissions?.has(PermissionFlagsBits.EmbedLinks),
+    canUseExternalEmojis: permissions?.has(PermissionFlagsBits.UseExternalEmojis)
   };
 }
 

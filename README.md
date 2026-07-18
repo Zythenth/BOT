@@ -1,375 +1,283 @@
 # Aurora
 
-Bot privado de Discord para a Aurora, focado em interacoes RP leves, afinidade por servidor, GIFs moderados e controles de privacidade.
+Aurora é um bot para Discord que oferece ações leves de roleplay entre membros de um servidor, respostas com frases e GIFs, afinidade por pares, controles de privacidade e ferramentas de moderação do conteúdo usado pelo bot.
 
-O objetivo do projeto e permitir comandos como kiss, abraco, cafune, consolo, protecao e brincadeiras leves, sempre com arquitetura modular: comandos apenas adaptam entrada/saida, enquanto services concentram a regra de negocio.
+O projeto está em versão inicial (`0.1.0`), mas possui código executável, migrations versionadas e testes automatizados. Ele não inclui credenciais, banco de dados ou mídia privada do autor. O documento em `docs/` é um registro histórico de design e pode conter decisões planejadas; este README e o código são a referência do que está implementado.
 
-## Stack
+## Funcionalidades atuais
 
-- TypeScript
-- Node.js 20.11+
-- discord.js 14
-- Prisma
-- SQLite no MVP
-- GIPHY API para GIFs
-- Docker e VPS como alvo de deploy
+- Ações de RP por slash command, prefixo configurável ou menção ao bot.
+- Frases locais e frases personalizadas por servidor.
+- GIFs da GIPHY com cota horária persistida, cache de metadados e moderação.
+- Afinidade por par, marcos, cooldowns, limites diários e ranking.
+- Bloqueio de usuários e categorias, consentimento para romance leve e opt-out de afinidade.
+- Consulta, exportação e apagamento dos dados de RP do próprio usuário.
+- Configuração por servidor de prefixo, canais, categorias, GIFs, afinidade, ranking e menções.
+- Comandos administrativos para GIFs e frases, protegidos por `Gerenciar Servidor`.
+- Persistência SQLite por Prisma e encerramento gracioso do cliente e do banco.
 
-## Estrutura
+## Tecnologias e requisitos
 
-- `src/config`: configuracoes e validacao de env.
-- `src/commands`: slash commands, comandos por prefixo e adaptadores de resposta.
-- `src/handlers`: handlers de eventos do Discord.
-- `src/services`: regras de negocio do bot.
-- `src/database`: Prisma Client e repositories.
-- `src/types`: tipos compartilhados.
-- `src/utils`: utilitarios como logger.
-- `data`: JSONs base, frases e termos de busca.
-- `env`: exemplos de `.env`, sem tokens reais.
-- `prisma`: schema Prisma e migrations.
-- `tests`: testes unitarios do MVP.
+- Node.js 22.11 ou superior dentro da linha 22.x (a faixa suportada é `>=22.11.0 <23`).
+- npm e o lockfile incluído no repositório.
+- Uma aplicação de bot no Discord e um servidor em que você possa instalá-la.
+- SQLite, usado pelo Prisma sem instalação separada.
+- Chave da GIPHY somente se você quiser buscar novos GIFs externos.
+- Docker com Compose é opcional.
 
-## Instalacao
+## Instalação
 
-```bat
-npm install
+Após clonar o repositório:
+
+```sh
+npm ci
 ```
 
-Esse comando baixa dependencias e cria `node_modules`. Ele acessa a internet e executa scripts de instalacao dos pacotes declarados no `package.json`.
+O `postinstall` gera o Prisma Client automaticamente. Para atualizar dependências deliberadamente, use `npm install`; para instalações reproduzíveis e CI, use `npm ci`.
 
-## Configuracao do `.env`
+Crie o arquivo local de ambiente a partir do exemplo:
 
-Crie um `.env` real na raiz do projeto a partir do exemplo.
-
-No `cmd` do Windows:
-
-```bat
-copy env\.env.development.example .env
+```sh
+cp env/.env.example .env
 ```
 
 No PowerShell:
 
 ```powershell
-Copy-Item env\.env.development.example .env
+Copy-Item env/.env.example .env
 ```
 
-Depois preencha no `.env`:
+O `.env` real é ignorado pelo Git. Não coloque tokens em arquivos rastreados, issues, logs ou capturas de tela.
 
-```env
-DISCORD_TOKEN=
-DISCORD_CLIENT_ID=
-DISCORD_DEV_GUILD_ID=
-DISCORD_ALLOWED_GUILD_IDS=
-DATABASE_URL="file:./dev.db"
-GIPHY_API_KEY=
-```
+## Credenciais do Discord e da GIPHY
 
-Nunca coloque token real no Git. O `.gitignore` ignora `.env` e `.env.*` reais.
+1. Crie uma aplicação no [Discord Developer Portal](https://discord.com/developers/applications).
+2. Na seção **Bot**, crie o usuário do bot, copie o token para `DISCORD_TOKEN` e habilite **Message Content Intent** se for usar comandos por prefixo.
+3. Copie o **Application ID** para `DISCORD_CLIENT_ID`.
+4. Para testes, ative o modo de desenvolvedor do Discord, copie o ID do servidor e use-o em `DISCORD_DEV_GUILD_ID`.
+5. Instale a aplicação no servidor com os escopos `bot` e `applications.commands`. O [guia oficial do Discord](https://docs.discord.com/developers/quick-start/getting-started) descreve esse fluxo.
+6. Para GIFs externos, crie uma chave seguindo a [documentação oficial da GIPHY](https://developers.giphy.com/docs/api/) e salve-a em `GIPHY_API_KEY`.
 
-Variaveis principais:
+Trate o token do Discord e a chave da GIPHY como senhas. Se houver suspeita de exposição, revogue-os nos respectivos painéis e gere novos valores.
 
-- `DISCORD_TOKEN`: token do bot no Discord Developer Portal.
-- `DISCORD_CLIENT_ID`: Application ID do bot.
-- `DISCORD_DEV_GUILD_ID`: ID do servidor de teste; quando preenchido, deploya slash commands apenas nesse servidor.
-- `DISCORD_ALLOWED_GUILD_IDS`: lista opcional separada por virgula; quando preenchida, a Aurora ignora/sai de servidores fora da allowlist.
-- `DATABASE_URL`: caminho SQLite usado pelo Prisma.
-- `GIPHY_API_KEY`: chave da GIPHY API.
-- `GIPHY_REQUESTS_PER_HOUR`: cota persistida no SQLite por janela horaria, padrao `100`.
-- `ACTION_COOLDOWN_SECONDS`: cooldown curto anti-flood para bloquear repeticao rapida de RP, padrao `5`.
-- `ALLOW_NSFW`: mantenha `false` no MVP.
-- `ALLOW_UNCATEGORIZED_GIFS`: permite usar GIF antigo com status `uncategorized` quando ele ainda estiver coerente com a acao/categoria. Novos GIFs importados automaticamente ja entram como `approved`.
+## Configuração
 
-## Discord
+As variáveis abaixo são lidas pelo código. Campos vazios nos exemplos não são credenciais válidas.
 
-No convite do bot, use os scopes:
+| Variável | Obrigatória | Padrão | Uso |
+| --- | --- | --- | --- |
+| `DISCORD_TOKEN` | Sim | — | Token do usuário de bot. |
+| `DISCORD_CLIENT_ID` | Sim | — | Application ID usado para registrar comandos. |
+| `DATABASE_URL` | Sim | — | URL Prisma do SQLite, por exemplo `file:./dev.db`. |
+| `NODE_ENV` | Não | `development` | `development`, `test` ou `production`. |
+| `DISCORD_DEV_GUILD_ID` | Não | vazio | Registra slash commands apenas nesse servidor. Sem ele, o registro é global. |
+| `DISCORD_ALLOWED_GUILD_IDS` | Não | vazio | IDs separados por vírgula. Vazio permite todos os servidores. |
+| `GIF_PROVIDER` | Não | `giphy` | O único provider suportado atualmente é `giphy`. |
+| `GIPHY_API_KEY` | Não | vazio | Necessária para buscar ou atualizar GIFs pela API. Sem ela, o bot usa texto e GIFs já salvos quando disponíveis. |
+| `GIPHY_REQUESTS_PER_HOUR` | Não | `100` | Limite local de chamadas por janela horária, persistido no SQLite. |
+| `GIPHY_RATING` | Não | `pg` | `g`, `pg`, `pg-13` ou `r`; `r` é reduzido para `pg` quando NSFW está desativado. |
+| `GIPHY_LANG` | Não | `pt` | Idioma enviado à busca da GIPHY. |
+| `ACTION_COOLDOWN_SECONDS` | Não | `5` | Janela anti-spam global das ações, de `0` a `3600`. |
+| `ALLOW_NSFW` | Não | `false` | Permite rating `r` quando `true`. |
+| `ALLOW_UNCATEGORIZED_GIFS` | Não | `true` | Permite reutilizar GIF legado com status `uncategorized` quando compatível. |
+| `TECHNICAL_LOG_PATH` | Não | `logs/technical.log` | Caminho do log técnico privado. |
+| `DOTENV_CONFIG_PATH` | Não | `.env` | Caminho alternativo do arquivo dotenv; deve ser definido no ambiente do processo. |
+
+O prefixo inicial é `-` e depois pode ser alterado por servidor com `/config prefixo`. O único locale de servidor implementado é `pt-BR`.
+
+## Permissões e intents do Discord
+
+Escopos de instalação:
 
 - `bot`
 - `applications.commands`
 
-Permissoes recomendadas:
+Permissões do bot:
 
-- View Channels
-- Send Messages
-- Embed Links
-- Use External Emojis
-- Read Message History
+- Ver canais.
+- Enviar mensagens.
+- Inserir links.
+- Ler histórico de mensagens para o fluxo por prefixo.
+- Anexar arquivos para `/exportardados`.
 
-Intents usadas pelo codigo:
+Intents usadas:
 
 - `Guilds`
 - `GuildMessages`
 - `MessageContent`
 
-Para comandos por prefixo como `-hug`, habilite a **Message Content Intent** no Discord Developer Portal. Sem ela, os slash commands continuam funcionando, mas comandos com `-` podem nao ser lidos.
+Sem **Message Content Intent**, slash commands continuam disponíveis, mas comandos por prefixo podem não ser recebidos. Permissões específicas do canal podem bloquear respostas mesmo que o convite original as tenha concedido.
 
-## Prisma e banco
+## Banco de dados
 
-Valide o schema:
+Valide o schema e aplique as migrations versionadas. O script prepara o arquivo SQLite vazio antes de chamar o Prisma Migrate, o que também evita uma falha de criação inicial observada no Windows:
 
-```bat
-npx prisma validate
+```sh
+npm run prisma:validate
+npm run prisma:migrate:deploy
 ```
 
-Gere o Prisma Client:
+Com `DATABASE_URL="file:./dev.db"`, o caminho relativo é resolvido pelo Prisma a partir da pasta do schema, portanto o arquivo fica em `prisma/dev.db`. Bancos `*.db`, journals e arquivos SQLite locais são ignorados.
 
-```bat
-npx prisma generate
-```
+Para inspecionar um banco local:
 
-Crie/aplique migration local em desenvolvimento:
-
-```bat
-npx prisma migrate dev --name init
-```
-
-Este repositorio possui migrations versionadas em `prisma/migrations`. Se voce ja tem um SQLite local criado antes das migrations, faca backup do arquivo `.db` antes de aplicar qualquer migration. Nao use `reset` em banco com dados reais.
-
-Se ja existirem migrations e voce so quiser aplicar no ambiente, como em producao:
-
-```bat
-npx prisma migrate deploy
-```
-
-Abrir Prisma Studio:
-
-```bat
+```sh
 npm run prisma -- studio
 ```
 
-## Registrar slash commands
+Faça backup do banco antes de migrations em um ambiente que já tenha dados. O projeto não automatiza backup nem restauração.
 
-Com `.env` preenchido:
+## Registro dos slash commands
 
-```bat
+Com `DISCORD_TOKEN` e `DISCORD_CLIENT_ID` configurados:
+
+```sh
 npm run deploy:commands
 ```
 
-Se `DISCORD_DEV_GUILD_ID` estiver definido, os comandos sao registrados no servidor de desenvolvimento. Sem `DISCORD_DEV_GUILD_ID`, o script registra comandos globais da aplicacao.
+Se `DISCORD_DEV_GUILD_ID` estiver preenchido, o script substitui os comandos daquele servidor. Caso contrário, substitui os comandos globais da aplicação. O processo de inicialização não sincroniza comandos automaticamente.
 
-Se o Discord responder `Missing Access` durante `deploy:commands`, confira:
+## Execução
 
-- `DISCORD_TOKEN` e `DISCORD_CLIENT_ID` pertencem a mesma aplicacao no Developer Portal.
-- `DISCORD_DEV_GUILD_ID`, quando preenchido, aponta para um servidor onde esse mesmo bot esta instalado.
-- O bot foi convidado com os scopes `bot` e `applications.commands`.
-- Para comandos globais em producao, deixe `DISCORD_DEV_GUILD_ID` vazio.
+Desenvolvimento com recarga:
 
-## Desenvolvimento
-
-```bat
+```sh
 npm run dev
 ```
 
-O bot carrega `.env`, valida variaveis obrigatorias e inicia o client Discord.
+Execução compilada:
 
-## Testes e qualidade
-
-Rodar testes:
-
-```bat
-npm run test
-```
-
-Validar TypeScript:
-
-```bat
-npm run typecheck
-```
-
-Build:
-
-```bat
-npm run build
-```
-
-Lint ainda esta como placeholder nesta etapa:
-
-```bat
-npm run lint
-```
-
-## Producao
-
-Use `env/.env.production.example` como base para o `.env` da VPS:
-
-```bat
-copy env\.env.production.example .env
-```
-
-Fluxo recomendado:
-
-```bat
-npm install
-npx prisma validate
-npx prisma generate
-npx prisma migrate deploy
-npm run deploy:commands
+```sh
 npm run build
 npm run start
 ```
 
-Em producao, guarde `.env` em pasta protegida, nunca versionada. Use um gerenciador de processo ou servico da VPS para reiniciar o bot em caso de queda.
+Antes de conectar ao Discord, o processo valida a configuração, conecta ao SQLite e verifica se as migrations foram aplicadas. Configuração ausente ou banco não preparado encerram o processo com erro, sem imprimir credenciais.
+
+## Comandos disponíveis
+
+### RP, afinidade e ajuda
+
+- `/rp`, `/kiss`, `/hug`, `/beijotesta`, `/beijobochecha`, `/cafune`, `/consolar`, `/proteger`, `/morder` e `/cutucar`.
+- `/afinidade`, `/rankafinidade`, `/help` e `/prefixstatus`.
+- Os comandos diretos de RP, afinidade, ranking e ajuda também têm forma por prefixo, como `-hug @Usuario` e `-help`.
+- A menção ao bot funciona como prefixo auxiliar, por exemplo `@Aurora hug @Usuario`.
+
+As ações não aceitam bots nem o próprio autor como alvo. A resposta pode ficar somente em texto quando não houver GIF utilizável.
+
+O botão **Retribuir** só pode ser usado pelo alvo original, uma vez, durante 15 minutos. Uma tentativa recusada por cooldown, bloqueio ou outra regra libera o botão para uma nova tentativa válida.
+
+### Privacidade e dados próprios
+
+- `/bloquearrp`, `/desbloquearrp` e `/bloquearcategoria`.
+- `/preferencias`, `/optout` e `/optin`.
+- `/meusdados`, `/exportardados` e `/apagardados confirmacao:APAGAR`.
+
+A exportação é enviada como anexo efêmero. O apagamento remove interações, pares de afinidade, bloqueios criados pelo usuário e estados de botão relacionados; mantém uma preferência mínima de opt-out/ranking oculto e não remove bloqueios criados por terceiros nem a trilha administrativa mínima.
+
+### Administração
+
+Estes comandos exigem `Gerenciar Servidor` por padrão e também validam a permissão no momento da execução:
+
+- GIFs: `/gifadd`, `/gifbuscar`, `/gifaprovar`, `/gifbloquear`, `/gifremove`, `/gifmover`, `/giflist` e `/giftest`.
+- Frases: `/fraseadd`, `/fraseremove` e `/fraselist`.
+- Servidor: `/config prefixo`, `afinidade`, `gifs`, `categoria`, `canal`, `cooldown`, `idioma`, `mencionar`, `rank` e `reset`.
+
+## Persistência e dados gerados
+
+O SQLite armazena configurações de servidor, preferências, bloqueios, afinidade, interações, metadados e cota de GIFs, frases personalizadas, aliases, estados temporários de botões e logs administrativos.
+
+Os arquivos versionados `data/phrases.json` e `data/giphy-search-terms.json` são dados públicos necessários em runtime. Bancos, logs, arquivos `.env`, mídia baixada e relatórios gerados pela ferramenta de auditoria de GIFs não fazem parte do repositório público.
+
+O log técnico padrão fica em `logs/technical.log`, é ignorado pelo Git e inclui stack traces apenas localmente. Campos com nomes de segredo e valores conhecidos de credenciais são redigidos.
+
+### Seleção e moderação de GIFs
+
+GIFs salvos podem ter status `pending`, `approved`, `blocked`, `disabled` ou `uncategorized`. A resposta pública não mostra URL, provider, nome de arquivo nem identificador interno. Quando a GIPHY está disponível, a origem é escolhida pela quantidade de GIFs aprovados para aquela ação e categoria:
+
+| Aprovados | Banco | Nova busca GIPHY |
+| --- | --- | --- |
+| 0–19 | 65% | 35% |
+| 20–49 | 70% | 30% |
+| 50–99 | 75% | 25% |
+| 100–199 | 80% | 20% |
+| 200 ou mais | 85% | 15% |
+
+Com menos de cinco aprovados, o código prioriza a GIPHY para popular o banco. Sem chave ou cota, usa apenas o banco; se não houver GIF utilizável, envia somente a frase.
+
+## Testes e qualidade
+
+```sh
+npm test
+npm run lint
+npm run format:check
+npm run typecheck
+npm run build
+```
+
+Para executar todas as verificações de código em sequência:
+
+```sh
+npm run check
+```
+
+Os testes usam `node:test`, não precisam de token, internet, servidor Discord ou conta GIPHY. O lint é uma verificação TypeScript estrita de código não usado, retornos e fallthrough; não é ESLint. A formatação é verificada com Prettier.
 
 ## Docker
 
-O repositorio possui `Dockerfile` e `docker-compose.yml` para producao. O `.env` real nao e copiado para a imagem; o compose le `.env` em tempo de execucao.
+Preencha `.env` e execute:
 
-Build da imagem:
-
-```bat
-docker build -t aurora-bot .
-```
-
-Subir com compose:
-
-```bat
+```sh
 docker compose up -d --build
-```
-
-Ver logs:
-
-```bat
 docker compose logs -f aurora
 ```
 
-Parar:
+O Compose aplica migrations antes de iniciar o bot. O SQLite fica no volume `aurora-storage`, montado em `/app/storage`, enquanto os JSONs públicos continuam dentro da imagem. O `DATABASE_URL` do contêiner é fixado em `file:/app/storage/aurora.db`; o valor local do `.env` é substituído somente dentro do serviço.
 
-```bat
+Para parar sem apagar o volume:
+
+```sh
 docker compose down
 ```
 
-Reiniciar:
+Não use `docker compose down -v` se precisar preservar o banco.
 
-```bat
-docker compose restart aurora
-```
+## Estrutura do projeto
 
-O SQLite fica no volume nomeado `aurora-data`, montado em `/app/data`, com `DATABASE_URL=file:/app/data/aurora.db`. Faca backup desse volume antes de migrations em producao.
+- `src/commands`: comandos Discord e adaptação das respostas.
+- `src/handlers`: eventos de interação, mensagem, guild e prontidão.
+- `src/services`: regras de negócio e fronteiras com GIPHY.
+- `src/database`: Prisma Client e repositórios.
+- `src/config`: validação de ambiente, defaults e ações públicas.
+- `src/tools`: ferramenta local de auditoria de GIFs.
+- `prisma`: schema e migrations SQLite.
+- `data`: frases e termos de busca necessários em runtime.
+- `env`: exemplos públicos de configuração.
+- `tests`: testes unitários isolados de serviços externos.
+- `docs`: documento histórico de design, não uma lista garantida de recursos.
 
-## Comandos do MVP
+## Problemas comuns
 
-Slash e prefixo:
+- **`Invalid environment configuration`**: copie o exemplo e preencha as três variáveis obrigatórias.
+- **Erro de tabela inexistente ao iniciar**: execute `npm run prisma:migrate:deploy` com o mesmo `DATABASE_URL` usado pelo bot.
+- **`Missing Access` ao registrar comandos**: confirme que token e Application ID pertencem à mesma aplicação, que o bot está no servidor de desenvolvimento e que os escopos de instalação estão corretos.
+- **Slash command antigo ou indisponível**: execute novamente `npm run deploy:commands` no mesmo escopo em que os comandos foram registrados.
+- **Prefixo não responde**: habilite Message Content Intent e confira as permissões do canal e o prefixo atual em `/prefixstatus`.
+- **Resposta sem GIF**: configure `GIPHY_API_KEY`, confira a cota e verifique se há conteúdo aprovado para a ação/categoria.
+- **`/exportardados` falha**: conceda ao bot a permissão Anexar arquivos no canal.
 
-- `/rp acao:<autocomplete> alvo:<usuario> mensagem:<opcional>`
-- `/kiss` e `-kiss`
-- `/hug` e `-hug`
-- `/beijotesta` e `-beijotesta`
-- `/beijobochecha` e `-beijobochecha`
-- `/cafune` e `-cafune`
-- `/consolar` e `-consolar`
-- `/proteger` e `-proteger`
-- `/morder` e `-morder`
-- `/cutucar` e `-cutucar`
-- `/afinidade` e `-afinidade`
-- `/rankafinidade` e `-rankafinidade`
-- `/help` e `-help`
+## Limitações atuais
 
-Tambem e possivel usar mencao ao bot como prefixo auxiliar:
+- Interface e frases são voltadas a `pt-BR`; outros locales não estão implementados.
+- SQLite é adequado a uma única instância do bot; execução distribuída não é suportada.
+- Não há painel web, backup automático, restore automático ou deploy automático.
+- O uso de GIFs externos depende da disponibilidade e dos termos da GIPHY.
+- Não existe cobertura de integração ao vivo com Discord no conjunto automatizado; isso exige uma aplicação e um servidor de teste próprios.
 
-- `@Aurora hug @Usuario`
-- `@Aurora help`
+## Contribuição e reporte de problemas
 
-Privacidade:
+Leia [CONTRIBUTING.md](CONTRIBUTING.md) antes de enviar uma alteração. Para falhas que possam expor dados ou credenciais, siga [SECURITY.md](SECURITY.md) e não publique detalhes sensíveis em uma issue aberta.
 
-- `/bloquearrp`
-- `/desbloquearrp`
-- `/bloquearcategoria`
-- `/preferencias`
-- `/optout`
-- `/optin`
-- `/meusdados`
-- `/exportardados`
-- `/apagardados`
+## Licença
 
-Administracao de GIFs:
-
-- `/gifadd`
-- `/gifbuscar`
-- `/gifaprovar`
-- `/gifbloquear`
-- `/gifremove`
-- `/gifmover`
-- `/giflist`
-- `/giftest`
-
-Administracao de frases:
-
-- `/fraseadd`
-- `/fraseremove`
-- `/fraselist`
-
-Configuracao por servidor:
-
-- `/config prefixo`
-- `/config afinidade`
-- `/config gifs`
-- `/config categoria`
-- `/config canal`
-- `/config cooldown`
-- `/config idioma`
-- `/config mencionar`
-- `/config rank`
-- `/config reset`
-
-## Politica de GIFs
-
-O MVP usa GIPHY API. Nao usa Tenor e nao baixa milhares de arquivos para a VPS.
-
-O banco salva metadados persistentes como provider, `providerGifId`, acao, categoria, status, termo de busca, rating, uso e datas. URLs de midia da GIPHY nao devem ser tratadas como permanentes; quando necessario, o bot renova/busca a midia usando `providerGifId`.
-
-Status de GIF:
-
-- `pending`
-- `approved`
-- `blocked`
-- `disabled`
-- `uncategorized`
-
-A resposta publica de RP nao deve mostrar fonte, URL, nome de arquivo ou `providerGifId`. O rodape pode mostrar o `id` interno do GIF para facilitar moderacao.
-
-## Proporcao progressiva de GIFs
-
-A proporcao depende da quantidade de GIFs `approved` daquela `action/category`:
-
-- 0-19 aprovados: 65% banco / 35% GIPHY nova
-- 20-49 aprovados: 70% banco / 30% GIPHY nova
-- 50-99 aprovados: 75% banco / 25% GIPHY nova
-- 100-199 aprovados: 80% banco / 20% GIPHY nova
-- 200+ aprovados: 85% banco / 15% GIPHY nova
-
-Enquanto uma acao/categoria tiver menos de 5 GIFs aprovados e a GIPHY estiver disponivel, a Aurora prioriza novas buscas para evitar repetir sempre o mesmo GIF e popular o banco.
-
-Se a cota GIPHY acabar, o bot usa apenas GIFs `approved` do banco. Se nao houver GIF aprovado e nao puder buscar na GIPHY, a resposta deve sair apenas com texto. A cota fica persistida no SQLite em janelas horarias, entao restart do processo nao zera o contador.
-
-## Privacidade
-
-Usuarios podem bloquear interacoes recebidas, bloquear categorias, bloquear romance/brincadeiras, ocultar ranking e sair do sistema de afinidade com `/optout`.
-
-Usuarios tambem podem ver um resumo privado com `/meusdados`, exportar os proprios dados em JSON privado com `/exportardados` e apagar os proprios dados de RP com `/apagardados confirmacao:APAGAR`.
-
-O apagamento remove interacoes RP, pares de afinidade, bloqueios criados pelo usuario e estados temporarios de botoes ligados ao usuario. Bloqueios criados por outras pessoas nao sao removidos. Para manter a escolha de privacidade, a Aurora preserva uma preferencia minima de opt-out/ranking oculto. `AdminLog` administrativo e retido como trilha minima e nao e exportado em detalhes.
-
-Interacoes bloqueadas nao devem enviar RP nem pontuar afinidade. O botao Retribuir passa pela mesma regra do `actionService`, entao tambem respeita bloqueios, cooldown, consentimento e opt-out.
-
-## Seguranca de segredos
-
-- Nunca publique `DISCORD_TOKEN`.
-- Nunca publique `GIPHY_API_KEY`.
-- Nao envie `.env` para GitHub, Discord ou prints publicos.
-- Revogue e gere um token novo se ele vazar.
-- Em VPS, proteja o `.env` com permissao restrita ao usuario do processo.
-
-## Fluxo do zero
-
-```bat
-npm install
-copy env\.env.development.example .env
-npx prisma validate
-npx prisma generate
-npx prisma migrate dev --name init
-npm run deploy:commands
-npm run test
-npm run typecheck
-npm run build
-npm run dev
-```
-
-Antes de `deploy:commands` e `dev`, preencha `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_DEV_GUILD_ID` e, se for usar GIFs externos, `GIPHY_API_KEY`.
+Este repositório ainda não possui uma licença. Isso é um bloqueio jurídico para uso, modificação e redistribuição por terceiros: a disponibilização pública do código, por si só, não concede essas permissões. O responsável pelo projeto precisa escolher e adicionar uma licença antes de promover reutilização pública.

@@ -97,12 +97,7 @@ export interface ActionAffinityMilestone {
 }
 
 export type ActionAffinityScoreReason =
-  | "awarded"
-  | "not_pointable"
-  | "opt_out"
-  | "cooldown"
-  | "daily_limit"
-  | "max_points";
+  "awarded" | "not_pointable" | "opt_out" | "cooldown" | "daily_limit" | "max_points";
 
 export interface ActionResponseButton {
   type: "button";

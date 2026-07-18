@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createAliasService, normalizeAlias, type AliasRepositoryLike } from "../../src/services/aliasService";
+import {
+  createAliasService,
+  normalizeAlias,
+  type AliasRepositoryLike
+} from "../../src/services/aliasService";
 
 test("aliasService normaliza espacos, caixa e acentos", () => {
   assert.equal(normalizeAlias("  \u00C1bra\u00E7o  "), "abraco");

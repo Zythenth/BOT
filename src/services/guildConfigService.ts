@@ -73,7 +73,9 @@ export const guildConfigService = {
       };
     }
 
-    const config = await updateGuildConfig(input, { prefix }, ADMIN_LOG_ACTIONS.CONFIG_PREFIX, { prefix });
+    const config = await updateGuildConfig(input, { prefix }, ADMIN_LOG_ACTIONS.CONFIG_PREFIX, {
+      prefix
+    });
 
     return {
       ok: true,
@@ -95,7 +97,9 @@ export const guildConfigService = {
     return boolResult("Afinidade", input.enabled, config);
   },
 
-  async setGifsEnabled(input: GuildConfigChangeInput & { enabled: boolean }): Promise<GuildConfigResult> {
+  async setGifsEnabled(
+    input: GuildConfigChangeInput & { enabled: boolean }
+  ): Promise<GuildConfigResult> {
     const config = await updateGuildConfig(
       input,
       { gifsEnabled: input.enabled },
@@ -175,9 +179,7 @@ export const guildConfigService = {
 
     return {
       ok: true,
-      message: input.enabled
-        ? `Cooldown ativado com ${cooldownSeconds}s.`
-        : "Cooldown desativado.",
+      message: input.enabled ? `Cooldown ativado com ${cooldownSeconds}s.` : "Cooldown desativado.",
       config
     };
   },
@@ -192,9 +194,14 @@ export const guildConfigService = {
       };
     }
 
-    const config = await updateGuildConfig(input, { locale: input.locale }, ADMIN_LOG_ACTIONS.CONFIG_LOCALE, {
-      locale: input.locale
-    });
+    const config = await updateGuildConfig(
+      input,
+      { locale: input.locale },
+      ADMIN_LOG_ACTIONS.CONFIG_LOCALE,
+      {
+        locale: input.locale
+      }
+    );
 
     return {
       ok: true,
@@ -333,7 +340,9 @@ function parseStringArray(value: string | null | undefined): string[] {
       return [];
     }
 
-    return parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+    return parsed.filter(
+      (item): item is string => typeof item === "string" && item.trim().length > 0
+    );
   } catch {
     return [];
   }

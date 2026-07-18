@@ -1,9 +1,6 @@
 import type { Phrase } from "@prisma/client";
 import { getRpActionDefinition } from "../config";
-import {
-  guildRepository,
-  phraseRepository
-} from "../database";
+import { guildRepository, phraseRepository } from "../database";
 import type { ActionCategory, ActionName } from "../types";
 import { ADMIN_LOG_ACTIONS, adminLogService } from "./adminLogService";
 import { phraseService, type BasePhraseEntry } from "./phraseService";
@@ -99,7 +96,12 @@ export const phraseModerationService = {
       };
     }
 
-    const duplicated = await findEnabledDuplicate(input.guildId, input.action, category, normalizedText);
+    const duplicated = await findEnabledDuplicate(
+      input.guildId,
+      input.action,
+      category,
+      normalizedText
+    );
 
     if (duplicated) {
       await logPhraseAdminAction(input, ADMIN_LOG_ACTIONS.PHRASE_ADD, duplicated.id, {
@@ -228,7 +230,10 @@ async function ensureGuild(guildId: string): Promise<void> {
   await guildRepository.upsert({ id: guildId });
 }
 
-function resolveCategory(action: ActionName, category?: ActionCategory): ActionCategory | undefined {
+function resolveCategory(
+  action: ActionName,
+  category?: ActionCategory
+): ActionCategory | undefined {
   return category ?? getRpActionDefinition(action)?.category;
 }
 
@@ -289,7 +294,9 @@ async function findEnabledDuplicate(
   });
   const normalizedText = normalizePhraseText(text).toLowerCase();
 
-  return phrases.find((phrase) => normalizePhraseText(phrase.text).toLowerCase() === normalizedText);
+  return phrases.find(
+    (phrase) => normalizePhraseText(phrase.text).toLowerCase() === normalizedText
+  );
 }
 
 function toBaseListItem(phrase: BasePhraseEntry): PhraseListItem {

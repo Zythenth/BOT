@@ -27,9 +27,8 @@ export const prefixStatusCommand: SlashCommandDefinition = {
     await interaction.reply({
       content: [
         `Prefixo salvo: \`${prefix}\``,
-        `Fallback aceito: \`${DEFAULT_PREFIX}\``,
         `Message Content Intent no client: ${hasMessageContentIntent ? "sim" : "nao"}`,
-        "Teste agora: `-help` e depois veja se aparece log de prefixo no console."
+        `Teste agora: \`${prefix}help\` e depois veja se aparece log de prefixo no console.`
       ].join("\n"),
       ephemeral: true
     });

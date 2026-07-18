@@ -88,9 +88,7 @@ function formatRankingFooter(ranking: AffinityRankingPage): string {
 function formatActionUsage(
   counts: AffinityPairSummary["actionBreakdown"]["fromUserOneToUserTwo"]
 ): string {
-  return counts
-    .map((entry) => `${entry.label}: ${entry.count}`)
-    .join("\n");
+  return counts.map((entry) => `${entry.label}: ${entry.count}`).join("\n");
 }
 
 function formatDate(date: Date | null | undefined): string {

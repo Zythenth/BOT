@@ -1,5 +1,7 @@
 # GDD respondido - Aurora
 
+> **Documento histórico de design.** Este arquivo registra decisões e também pode conter itens planejados ou desatualizados. Ele não garante que uma funcionalidade esteja implementada. Para instalação, configuração, comandos e limitações verificadas, consulte o `README.md` da raiz e o código atual.
+
 Documento de decisões para o bot de roleplay fofo no Discord. O nome final do bot é **Aurora**. **RP Affection Bot** permanece apenas como nome antigo/codename histórico do projeto, não como nome público final.
 
 ## Resumo das decisões principais
@@ -132,7 +134,7 @@ Depois que um usuário usar qualquer ação de RP, como `/hug`, `-hug`, `/beijot
 Exemplo esperado:
 
 ```txt
-@Warley abraçou @Maluu!
+@UsuarioA abraçou @UsuarioB!
 [GIF grande da ação]
 [😊 Retribuir]
 ```
@@ -145,10 +147,10 @@ Toda ação de RP deve ter botão `😊 Retribuir`.
 
 Funcionamento obrigatório:
 
-- Se Warley usa `/hug @Maluu`, o embed mostra “Warley abraçou Maluu!”.
-- O botão permite que Maluu retribua a mesma ação em Warley.
+- Se UsuarioA usa `/hug @UsuarioB`, o embed mostra “UsuarioA abraçou UsuarioB!”.
+- O botão permite que UsuarioB retribua a mesma ação em UsuarioA.
 - Ao clicar, a Aurora executa a mesma ação invertendo autor e alvo.
-- Exemplo de retribuição: “Maluu retribuiu o abraço em Warley!”.
+- Exemplo de retribuição: “UsuarioB retribuiu o abraço em UsuarioA!”.
 - A retribuição também mostra GIF e pode gerar afinidade.
 - A retribuição deve respeitar cooldown, bloqueios, consentimento, opt-out, limite diário e limite máximo de pontos.
 - Apenas o alvo original pode clicar em `Retribuir`.
@@ -1867,7 +1869,7 @@ Regras estruturais:
 696. **Cada ação terá emoji próprio?**  
    **Resposta:** Sim. Cada ação terá emoji próprio.
 697. **O título do embed terá nome da ação?**  
-   **Resposta:** Sim, mas a prioridade visual é a frase principal no topo, por exemplo “@Warley abraçou @Maluu!”.
+   **Resposta:** Sim, mas a prioridade visual é a frase principal no topo, por exemplo “@UsuarioA abraçou @UsuarioB!”.
 698. **A descrição terá frase de RP?**  
    **Resposta:** Sim. Descrição com frase de RP.
 699. **O rodapé terá pontos de afinidade?**  
@@ -1909,7 +1911,7 @@ Regras visuais obrigatórias para respostas públicas de RP:
 Exemplo de resposta pública limpa:
 
 ```txt
-@Warley abraçou @Maluu!
+@UsuarioA abraçou @UsuarioB!
 
 [GIF grande da ação]
 

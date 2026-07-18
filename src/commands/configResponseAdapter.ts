@@ -35,9 +35,7 @@ export function buildConfigResultEmbed(result: GuildConfigResult): EmbedBuilder 
       },
       {
         name: "Cooldown",
-        value: result.config.cooldownEnabled
-          ? `${result.config.cooldownSeconds}s`
-          : "desativado",
+        value: result.config.cooldownEnabled ? `${result.config.cooldownSeconds}s` : "desativado",
         inline: true
       },
       {
@@ -62,9 +60,10 @@ export function buildConfigResultEmbed(result: GuildConfigResult): EmbedBuilder 
       },
       {
         name: "Canais permitidos",
-        value: result.config.allowedChannelIds.length > 0
-          ? result.config.allowedChannelIds.map((channelId) => `<#${channelId}>`).join(", ")
-          : "todos",
+        value:
+          result.config.allowedChannelIds.length > 0
+            ? result.config.allowedChannelIds.map((channelId) => `<#${channelId}>`).join(", ")
+            : "todos",
         inline: false
       }
     )

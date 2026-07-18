@@ -10,7 +10,8 @@ export interface CommandLogContext {
   userId?: string | null;
 }
 
-const SECRET_KEY_PATTERN = /(token|api[_-]?key|secret|password|authorization|discord[_-]?token|giphy[_-]?api[_-]?key)/i;
+const SECRET_KEY_PATTERN =
+  /(token|api[_-]?key|secret|password|authorization|discord[_-]?token|giphy[_-]?api[_-]?key)/i;
 
 export const logger = {
   info(message: string, meta?: unknown): void {
@@ -36,12 +37,10 @@ export function sanitizeForLog(value: unknown, options: { includeStack?: boolean
 
 function writeLog(level: LogLevel, message: string, meta?: unknown): void {
   const timestamp = new Date().toISOString();
-  const consoleMeta = meta === undefined
-    ? undefined
-    : sanitizeForLog(meta, { includeStack: false });
-  const technicalMeta = meta === undefined
-    ? undefined
-    : sanitizeForLog(meta, { includeStack: true });
+  const consoleMeta =
+    meta === undefined ? undefined : sanitizeForLog(meta, { includeStack: false });
+  const technicalMeta =
+    meta === undefined ? undefined : sanitizeForLog(meta, { includeStack: true });
   const consoleLine = formatLine(timestamp, level, message, consoleMeta);
   const technicalLine = formatLine(timestamp, level, message, technicalMeta);
   const writer = level === "error" ? console.error : console.log;
@@ -50,12 +49,7 @@ function writeLog(level: LogLevel, message: string, meta?: unknown): void {
   writePrivateTechnicalLog(technicalLine);
 }
 
-function formatLine(
-  timestamp: string,
-  level: LogLevel,
-  message: string,
-  meta?: unknown
-): string {
+function formatLine(timestamp: string, level: LogLevel, message: string, meta?: unknown): string {
   const base = `[${timestamp}] [${level.toUpperCase()}] ${redactString(message)}`;
 
   if (meta === undefined) {
@@ -77,8 +71,9 @@ function writePrivateTechnicalLog(line: string): void {
 }
 
 function getTechnicalLogPath(): string {
-  return process.env.TECHNICAL_LOG_PATH?.trim() ||
-    path.resolve(process.cwd(), "logs", "technical.log");
+  return (
+    process.env.TECHNICAL_LOG_PATH?.trim() || path.resolve(process.cwd(), "logs", "technical.log")
+  );
 }
 
 function sanitizeValue(
@@ -134,16 +129,13 @@ function redactString(value: string): string {
     process.env.DATABASE_URL
   ].filter((secret): secret is string => Boolean(secret && secret.length >= 6));
 
-  return secrets.reduce(
-    (current, secret) => current.replaceAll(secret, "[redacted]"),
-    value
-  );
+  return secrets.reduce((current, secret) => current.replaceAll(secret, "[redacted]"), value);
 }
 
 function safeJsonStringify(value: unknown): string {
   try {
     return JSON.stringify(value);
   } catch {
-    return "\"[unserializable]\"";
+    return '"[unserializable]"';
   }
 }

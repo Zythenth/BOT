@@ -24,7 +24,8 @@ export function buildHelpEmbed(prefix = "-"): EmbedBuilder {
       },
       {
         name: "Afinidade",
-        value: formatCommandPair("afinidade", prefix) + ", " + formatCommandPair("rankafinidade", prefix)
+        value:
+          formatCommandPair("afinidade", prefix) + ", " + formatCommandPair("rankafinidade", prefix)
       },
       {
         name: "Ajuda",
@@ -46,7 +47,8 @@ export function buildHelpEmbed(prefix = "-"): EmbedBuilder {
       },
       {
         name: "Config",
-        value: "`/config prefixo`, `/config afinidade`, `/config gifs`, `/config categoria`, `/config canal`, `/config cooldown`, `/config idioma`, `/config mencionar`, `/config rank`, `/config reset`"
+        value:
+          "`/config prefixo`, `/config afinidade`, `/config gifs`, `/config categoria`, `/config canal`, `/config cooldown`, `/config idioma`, `/config mencionar`, `/config rank`, `/config reset`"
       }
     )
     .setFooter({ text: `Prefixo atual: ${prefix}` })
@@ -54,8 +56,7 @@ export function buildHelpEmbed(prefix = "-"): EmbedBuilder {
 }
 
 function formatCommandsByCategory(category: string, prefix: string): string {
-  return RP_ACTION_DEFINITIONS
-    .filter((definition) => definition.category === category)
+  return RP_ACTION_DEFINITIONS.filter((definition) => definition.category === category)
     .map((definition) => formatCommandPair(definition.commandName, prefix))
     .join(", ");
 }

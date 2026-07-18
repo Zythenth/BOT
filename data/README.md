@@ -1,7 +1,8 @@
-# Data
+# Dados públicos de runtime
 
-Reserved for local data files used by the bot in later stages.
+Esta pasta contém os JSONs necessários ao funcionamento do bot:
 
-Tracked JSON files such as `phrases.json` and `giphy-search-terms.json` hold safe base content and search terms.
+- `phrases.json`: frases base por ação.
+- `giphy-search-terms.json`: termos usados nas buscas de GIFs.
 
-Do not commit SQLite databases, private exports, backups, tokens, or downloaded media files here.
+Relatórios, manifests, estado e mídia produzidos pela ferramenta local de auditoria de GIFs são reproduzíveis e ficam ignorados. Também não devem ser versionados aqui bancos SQLite, exports privados, backups, logs, tokens ou arquivos `.env`.

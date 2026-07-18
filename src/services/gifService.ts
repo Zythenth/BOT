@@ -24,7 +24,6 @@ export interface GifSelectionRequest {
 
 export interface GifService {
   chooseGif(request: GifSelectionRequest): Promise<ActionGifSelection | undefined>;
-  markGifUsed(gifId: string, usedAt?: Date): Promise<void>;
 }
 
 export interface StoredGifLike {
@@ -63,7 +62,6 @@ export interface GifStorage {
       status?: GifStatus;
     }
   ): Promise<StoredGifLike>;
-  incrementUsage(gifId: string, usedAt: Date): Promise<void>;
 }
 
 type SearchTermsByAction = Record<string, string[]>;
@@ -182,10 +180,6 @@ export function createGifService(
         approvedCount: decision.approvedCount
       });
       return approvedGif;
-    },
-
-    async markGifUsed(gifId, usedAt = new Date()) {
-      await storage.incrementUsage(gifId, usedAt);
     }
   };
 }
@@ -233,11 +227,14 @@ async function pickApprovedGif(
   };
 }
 
-async function upsertImportedGif(input: {
-  request: GifSelectionRequest;
-  giphyGif: GiphyGif;
-  searchTerm: string;
-}, storage: GifStorage): Promise<StoredGifLike> {
+async function upsertImportedGif(
+  input: {
+    request: GifSelectionRequest;
+    giphyGif: GiphyGif;
+    searchTerm: string;
+  },
+  storage: GifStorage
+): Promise<StoredGifLike> {
   const existingGif = await storage.findByProviderGifId(
     input.giphyGif.provider,
     input.giphyGif.providerGifId
@@ -350,11 +347,14 @@ async function searchAnimeGif(input: {
       continue;
     }
 
-    const storedGif = await upsertImportedGif({
-      request: input.request,
-      giphyGif,
-      searchTerm
-    }, input.storage);
+    const storedGif = await upsertImportedGif(
+      {
+        request: input.request,
+        giphyGif,
+        searchTerm
+      },
+      input.storage
+    );
 
     if (!canUseStoredGif(storedGif, input.request, input.allowUncategorizedGifs)) {
       return {
@@ -373,7 +373,8 @@ async function searchAnimeGif(input: {
         id: storedGif.id,
         provider: storedGif.provider,
         providerGifId: storedGif.providerGifId,
-        imageUrl: giphyGif.mediaUrl ?? input.provider.buildTransientMediaUrl(storedGif.providerGifId)
+        imageUrl:
+          giphyGif.mediaUrl ?? input.provider.buildTransientMediaUrl(storedGif.providerGifId)
       },
       searchTerm,
       storedStatus: storedGif.status,
@@ -421,10 +422,6 @@ const defaultGifStorage: GifStorage = {
 
   updateGiphyMetadata(id, data) {
     return gifRepository.updateGiphyMetadata(id, data);
-  },
-
-  async incrementUsage(gifId, usedAt) {
-    await gifRepository.incrementUsage(gifId, usedAt);
   }
 };
 
@@ -449,13 +446,11 @@ function pickSearchTerms(
   return shuffle(searchTerms[action] ?? []).slice(0, take);
 }
 
-function pickGenericAffectionSearchTerms(
-  searchTerms: SearchTermsByAction,
-  take: number
-): string[] {
+function pickGenericAffectionSearchTerms(searchTerms: SearchTermsByAction, take: number): string[] {
   const configuredTerms = searchTerms[GENERIC_AFFECTION_SEARCH_TERMS_KEY] ?? [];
-  return shuffle(configuredTerms.length > 0 ? configuredTerms : DEFAULT_GENERIC_AFFECTION_SEARCH_TERMS)
-    .slice(0, take);
+  return shuffle(
+    configuredTerms.length > 0 ? configuredTerms : DEFAULT_GENERIC_AFFECTION_SEARCH_TERMS
+  ).slice(0, take);
 }
 
 function canUseStoredGif(
@@ -509,14 +504,13 @@ function filterAnimeGifs(gifs: readonly GiphyGif[]): GiphyGif[] {
 function filterBlockedGifs(gifs: readonly GiphyGif[]): GiphyGif[] {
   return gifs.filter((gif) => {
     const searchableText = getSearchableGifText(gif);
-    return !BLOCKED_RESULT_KEYWORDS.some((keyword) => includesNormalizedKeyword(searchableText, keyword));
+    return !BLOCKED_RESULT_KEYWORDS.some((keyword) =>
+      includesNormalizedKeyword(searchableText, keyword)
+    );
   });
 }
 
-function filterGifsByKeywords(
-  gifs: readonly GiphyGif[],
-  keywords: readonly string[]
-): GiphyGif[] {
+function filterGifsByKeywords(gifs: readonly GiphyGif[], keywords: readonly string[]): GiphyGif[] {
   return gifs.filter((gif) => {
     const searchableText = getSearchableGifText(gif);
     return keywords.some((keyword) => includesNormalizedKeyword(searchableText, keyword));
@@ -524,13 +518,11 @@ function filterGifsByKeywords(
 }
 
 function getSearchableGifText(gif: GiphyGif): string {
-  return normalizeText([
-    gif.title,
-    gif.pageUrl,
-    gif.mediaUrl
-  ]
-    .filter((value): value is string => Boolean(value))
-    .join(" "));
+  return normalizeText(
+    [gif.title, gif.pageUrl, gif.mediaUrl]
+      .filter((value): value is string => Boolean(value))
+      .join(" ")
+  );
 }
 
 function includesNormalizedKeyword(searchableText: string, keyword: string): boolean {
@@ -538,11 +530,7 @@ function includesNormalizedKeyword(searchableText: string, keyword: string): boo
 }
 
 function normalizeText(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[-_]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return value.toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function getActionResultKeywords(action: ActionName): readonly string[] {
@@ -623,66 +611,15 @@ const BLOCKED_RESULT_KEYWORDS = [
 ];
 
 const ACTION_RESULT_KEYWORDS: Record<string, readonly string[]> = {
-  kiss: [
-    "kiss",
-    "kissing",
-    "couple kiss",
-    "romantic kiss",
-    "selinho"
-  ],
-  beijotesta: [
-    "forehead kiss",
-    "kiss forehead",
-    "kiss on forehead",
-    "forehead peck",
-    "forehead"
-  ],
-  beijobochecha: [
-    "cheek kiss",
-    "kiss cheek",
-    "kiss on cheek",
-    "cheek peck",
-    "cheek"
-  ],
-  hug: [
-    "hug",
-    "hugs",
-    "hugging",
-    "embrace",
-    "cuddle"
-  ],
-  cafune: [
-    "headpat",
-    "head pat",
-    "pat",
-    "hair pat"
-  ],
-  consolar: [
-    "comfort",
-    "comforting",
-    "console",
-    "consoling",
-    "sad hug",
-    "crying hug"
-  ],
-  proteger: [
-    "protect",
-    "protecting",
-    "protective",
-    "saving",
-    "shield"
-  ],
-  morder: [
-    "bite",
-    "biting",
-    "nibble",
-    "chomp"
-  ],
-  cutucar: [
-    "poke",
-    "poking",
-    "cheek poke"
-  ]
+  kiss: ["kiss", "kissing", "couple kiss", "romantic kiss", "selinho"],
+  beijotesta: ["forehead kiss", "kiss forehead", "kiss on forehead", "forehead peck", "forehead"],
+  beijobochecha: ["cheek kiss", "kiss cheek", "kiss on cheek", "cheek peck", "cheek"],
+  hug: ["hug", "hugs", "hugging", "embrace", "cuddle"],
+  cafune: ["headpat", "head pat", "pat", "hair pat"],
+  consolar: ["comfort", "comforting", "console", "consoling", "sad hug", "crying hug"],
+  proteger: ["protect", "protecting", "protective", "saving", "shield"],
+  morder: ["bite", "biting", "nibble", "chomp"],
+  cutucar: ["poke", "poking", "cheek poke"]
 };
 
 function readBoolean(name: string, fallback: boolean): boolean {

@@ -48,7 +48,5 @@ export function getCooldownUntil(input: CooldownCheckInput): Date | undefined {
 
   const cooldownUntil = new Date(input.lastUsedAt.getTime() + input.cooldownMs);
 
-  return cooldownUntil.getTime() > input.now.getTime()
-    ? cooldownUntil
-    : undefined;
+  return cooldownUntil.getTime() > input.now.getTime() ? cooldownUntil : undefined;
 }

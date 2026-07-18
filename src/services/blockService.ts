@@ -5,10 +5,7 @@ import type { RequiredActionPayloadContext } from "./actionPayloadBuilder";
 import { preferenceService } from "./preferenceService";
 
 export type PrivacyBlockCategory =
-  | "carinho_fofo"
-  | "romance_leve"
-  | "apoio_emocional"
-  | "brincadeira";
+  "carinho_fofo" | "romance_leve" | "apoio_emocional" | "brincadeira";
 
 export interface BlockPreferenceResult {
   message: string;
@@ -150,78 +147,91 @@ export function createBlockService(
   return {
     validateActionPrivacy,
 
-  async blockAllRp(guildId: string, blockerUserId: string): Promise<BlockPreferenceResult> {
-    await ensureBlock({
-      guildId,
-      blockerUserId,
-      blockedUserId: null,
-      category: null,
-      action: null
-    });
-
-    return {
-      message: "Interacoes RP recebidas foram bloqueadas."
-    };
-  },
-
-  async unblockAllRp(guildId: string, blockerUserId: string): Promise<BlockPreferenceResult> {
-    await dependencies.repository.deleteMany({
-      guildId,
-      blockerUserId,
-      blockedUserId: null,
-      category: null,
-      action: null
-    });
-
-    return {
-      message: "Interacoes RP recebidas foram reativadas."
-    };
-  },
-
-  async blockUser(
-    guildId: string,
-    blockerUserId: string,
-    blockedUserId: string
-  ): Promise<BlockPreferenceResult> {
-    await ensureBlock({
-      guildId,
-      blockerUserId,
-      blockedUserId,
-      category: null,
-      action: null
-    });
-
-    return {
-      message: "Esse usuario foi bloqueado para interacoes RP."
-    };
-  },
-
-  async unblockUser(
-    guildId: string,
-    blockerUserId: string,
-    blockedUserId: string
-  ): Promise<BlockPreferenceResult> {
-    await dependencies.repository.deleteMany({
-      guildId,
-      blockerUserId,
-      blockedUserId,
-      category: null,
-      action: null
-    });
-
-    return {
-      message: "Esse usuario foi desbloqueado para interacoes RP."
-    };
-  },
-
-  async setCategoryBlock(input: {
-    guildId: string;
-    blockerUserId: string;
-    category: PrivacyBlockCategory;
-    blocked: boolean;
-  }): Promise<BlockPreferenceResult> {
-    if (input.blocked) {
+    async blockAllRp(guildId: string, blockerUserId: string): Promise<BlockPreferenceResult> {
       await ensureBlock({
+        guildId,
+        blockerUserId,
+        blockedUserId: null,
+        category: null,
+        action: null
+      });
+
+      return {
+        message: "Interacoes RP recebidas foram bloqueadas."
+      };
+    },
+
+    async unblockAllRp(guildId: string, blockerUserId: string): Promise<BlockPreferenceResult> {
+      await dependencies.repository.deleteMany({
+        guildId,
+        blockerUserId,
+        blockedUserId: null,
+        category: null,
+        action: null
+      });
+
+      return {
+        message: "Interacoes RP recebidas foram reativadas."
+      };
+    },
+
+    async blockUser(
+      guildId: string,
+      blockerUserId: string,
+      blockedUserId: string
+    ): Promise<BlockPreferenceResult> {
+      await ensureBlock({
+        guildId,
+        blockerUserId,
+        blockedUserId,
+        category: null,
+        action: null
+      });
+
+      return {
+        message: "Esse usuario foi bloqueado para interacoes RP."
+      };
+    },
+
+    async unblockUser(
+      guildId: string,
+      blockerUserId: string,
+      blockedUserId: string
+    ): Promise<BlockPreferenceResult> {
+      await dependencies.repository.deleteMany({
+        guildId,
+        blockerUserId,
+        blockedUserId,
+        category: null,
+        action: null
+      });
+
+      return {
+        message: "Esse usuario foi desbloqueado para interacoes RP."
+      };
+    },
+
+    async setCategoryBlock(input: {
+      guildId: string;
+      blockerUserId: string;
+      category: PrivacyBlockCategory;
+      blocked: boolean;
+    }): Promise<BlockPreferenceResult> {
+      if (input.blocked) {
+        await ensureBlock({
+          guildId: input.guildId,
+          blockerUserId: input.blockerUserId,
+          blockedUserId: null,
+          category: input.category,
+          action: null
+        });
+
+        return {
+          message: "Categoria bloqueada para interacoes recebidas."
+        };
+      }
+
+      await dependencies.repository.deleteMany({
         guildId: input.guildId,
         blockerUserId: input.blockerUserId,
         blockedUserId: null,
@@ -230,38 +240,25 @@ export function createBlockService(
       });
 
       return {
-        message: "Categoria bloqueada para interacoes recebidas."
+        message: "Categoria liberada para interacoes recebidas."
+      };
+    },
+
+    async getStatus(guildId: string, userId: string): Promise<BlockStatus> {
+      const blocks = await dependencies.repository.list({
+        guildId,
+        blockerUserId: userId,
+        take: 100
+      });
+
+      return {
+        blocksAllRp: blocks.some(isFullBlock),
+        blockedCategories: blocks
+          .filter((block) => block.category && !block.blockedUserId && !block.action)
+          .map((block) => block.category as string),
+        blockedUserCount: blocks.filter((block) => Boolean(block.blockedUserId)).length
       };
     }
-
-    await dependencies.repository.deleteMany({
-      guildId: input.guildId,
-      blockerUserId: input.blockerUserId,
-      blockedUserId: null,
-      category: input.category,
-      action: null
-    });
-
-    return {
-      message: "Categoria liberada para interacoes recebidas."
-    };
-  },
-
-  async getStatus(guildId: string, userId: string): Promise<BlockStatus> {
-    const blocks = await dependencies.repository.list({
-      guildId,
-      blockerUserId: userId,
-      take: 100
-    });
-
-    return {
-      blocksAllRp: blocks.some(isFullBlock),
-      blockedCategories: blocks
-        .filter((block) => block.category && !block.blockedUserId && !block.action)
-        .map((block) => block.category as string),
-      blockedUserCount: blocks.filter((block) => Boolean(block.blockedUserId)).length
-    };
-  }
   };
 }
 

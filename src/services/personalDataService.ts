@@ -262,8 +262,10 @@ export function createPersonalDataService(dependencies: PersonalDataDependencies
       const locale = currentPreference?.locale ?? "pt-BR";
 
       const result = await dependencies.transaction(async (db) => {
-        const buttonInteractionStates =
-          await dependencies.buttonInteractionStates.deleteForUser(userId, db);
+        const buttonInteractionStates = await dependencies.buttonInteractionStates.deleteForUser(
+          userId,
+          db
+        );
         const interactions = await dependencies.interactions.deleteForUser(userId, db);
         const affinityPairs = await dependencies.affinityPairs.deleteForUser(userId, db);
         const blocks = await dependencies.blocks.deleteForUser(userId, db);
@@ -331,7 +333,9 @@ function toPreferenceExport(preference: StoredUserPreference): PersonalDataPrefe
   };
 }
 
-function toInteractionExport(interaction: InteractionRecord): PersonalDataExport["interactions"][number] {
+function toInteractionExport(
+  interaction: InteractionRecord
+): PersonalDataExport["interactions"][number] {
   return {
     guildId: interaction.guildId,
     actorUserId: interaction.actorUserId,
@@ -359,10 +363,7 @@ function toAffinityPairExport(
   };
 }
 
-function toBlockExport(
-  userId: string,
-  block: BlockRecord
-): PersonalDataExport["blocks"][number] {
+function toBlockExport(userId: string, block: BlockRecord): PersonalDataExport["blocks"][number] {
   const sent = block.blockerUserId === userId;
 
   return {

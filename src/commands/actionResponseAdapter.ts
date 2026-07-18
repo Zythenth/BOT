@@ -21,6 +21,18 @@ export async function replyWithActionResult(
   const options = toActionReplyOptions(result);
 
   if (interaction.deferred) {
+    if (result.ok && interaction.ephemeral) {
+      await interaction.followUp(options);
+
+      try {
+        await interaction.deleteReply();
+      } catch {
+        // The public follow-up succeeded; failure to remove the ephemeral placeholder is non-fatal.
+      }
+
+      return;
+    }
+
     await interaction.editReply(toEditReplyOptions(options));
     return;
   }

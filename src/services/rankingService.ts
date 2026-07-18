@@ -38,7 +38,8 @@ export const rankingService = {
     const page = normalizePage(request.page);
     const pageSize = normalizePageSize(request.pageSize);
     const rankingEnabled =
-      request.rankingEnabled ?? (await guildConfigService.getConfig(request.guildId)).rankingEnabled;
+      request.rankingEnabled ??
+      (await guildConfigService.getConfig(request.guildId)).rankingEnabled;
 
     if (!rankingEnabled) {
       return {

@@ -1,11 +1,11 @@
 import { PermissionFlagsBits, type ButtonInteraction } from "discord.js";
-import { getRpActionDefinition } from "../config";
+import { getRpActionDefinition, RETRIBUTE_BUTTON_TTL_MS } from "../config";
+import { buttonInteractionStateRepository } from "../database";
 import type { ActionContext, ActionResult } from "../types";
 import { actionService } from "./actionService";
 import { failAction } from "./actionValidation";
 
 const RETRIBUTE_BUTTON_PREFIX = "rp:retribute:";
-const RETRIBUTE_BUTTON_TTL_MS = 15 * 60 * 1000;
 const RETRIBUTE_SENDER_MESSAGE =
   "Ei, esse botão é para quem recebeu o carinho retribuir você. Deixa a outra pessoa decidir, tá? 💛";
 const RETRIBUTE_OTHER_USER_MESSAGE =
@@ -17,45 +17,97 @@ export function isRetributeButtonCustomId(customId: string): boolean {
   return customId.startsWith(RETRIBUTE_BUTTON_PREFIX);
 }
 
-export const retributeService = {
-  async execute(interaction: ButtonInteraction): Promise<ActionResult> {
-    const parsed = parseRetributeCustomId(interaction.customId);
+export interface RetributeButtonState {
+  action: string;
+  guildId: string;
+  originalAuthorId: string;
+  originalTargetId: string;
+  expiresAt: Date;
+  usedAt: Date | null;
+}
 
-    if (!parsed) {
-      return failAction("expired", RETRIBUTE_EXPIRED_MESSAGE);
+export interface RetributeStateStore {
+  findByCustomId(customId: string): Promise<RetributeButtonState | null>;
+  claim(customId: string, usedAt: Date): Promise<{ count: number }>;
+  release(customId: string, usedAt: Date): Promise<{ count: number }>;
+}
+
+export interface RetributeActionExecutor {
+  execute(context: ActionContext): Promise<ActionResult>;
+}
+
+export function createRetributeService(
+  stateStore: RetributeStateStore = buttonInteractionStateRepository,
+  actionExecutor: RetributeActionExecutor = actionService
+) {
+  return {
+    async execute(interaction: ButtonInteraction): Promise<ActionResult> {
+      const parsed = parseRetributeCustomId(interaction.customId);
+
+      if (!parsed) {
+        return failAction("expired", RETRIBUTE_EXPIRED_MESSAGE);
+      }
+
+      if (interaction.guildId !== parsed.guildId) {
+        return failAction("expired", RETRIBUTE_EXPIRED_MESSAGE);
+      }
+
+      if (isExpired(parsed.createdAt, new Date())) {
+        return failAction("expired", RETRIBUTE_EXPIRED_MESSAGE);
+      }
+
+      if (interaction.user.id === parsed.originalActorUserId) {
+        return failAction("blocked", RETRIBUTE_SENDER_MESSAGE);
+      }
+
+      if (interaction.user.id !== parsed.originalTargetUserId) {
+        return failAction("blocked", RETRIBUTE_OTHER_USER_MESSAGE);
+      }
+
+      const state = await stateStore.findByCustomId(interaction.customId);
+
+      if (!isMatchingAvailableState(state, parsed, new Date())) {
+        return failAction("expired", RETRIBUTE_EXPIRED_MESSAGE);
+      }
+
+      const definition = getRpActionDefinition(parsed.action);
+
+      if (!definition) {
+        return failAction("unknown_error", "Esta acao de RP nao esta registrada.");
+      }
+
+      const botUser = interaction.client.user;
+
+      if (!botUser) {
+        throw new Error("Discord client user is not available.");
+      }
+
+      const claimedAt = new Date();
+      const claim = await stateStore.claim(interaction.customId, claimedAt);
+
+      if (claim.count !== 1) {
+        return failAction("expired", RETRIBUTE_EXPIRED_MESSAGE);
+      }
+
+      try {
+        const result = await actionExecutor.execute(
+          buildRetributeContext(interaction, parsed, definition, botUser)
+        );
+
+        if (!result.ok) {
+          await stateStore.release(interaction.customId, claimedAt);
+        }
+
+        return result;
+      } catch (error) {
+        await stateStore.release(interaction.customId, claimedAt).catch(() => undefined);
+        throw error;
+      }
     }
+  };
+}
 
-    if (interaction.guildId !== parsed.guildId) {
-      return failAction("expired", RETRIBUTE_EXPIRED_MESSAGE);
-    }
-
-    if (isExpired(parsed.createdAt, new Date())) {
-      return failAction("expired", RETRIBUTE_EXPIRED_MESSAGE);
-    }
-
-    if (interaction.user.id === parsed.originalActorUserId) {
-      return failAction("blocked", RETRIBUTE_SENDER_MESSAGE);
-    }
-
-    if (interaction.user.id !== parsed.originalTargetUserId) {
-      return failAction("blocked", RETRIBUTE_OTHER_USER_MESSAGE);
-    }
-
-    const definition = getRpActionDefinition(parsed.action);
-
-    if (!definition) {
-      return failAction("unknown_error", "Esta acao de RP nao esta registrada.");
-    }
-
-    const botUser = interaction.client.user;
-
-    if (!botUser) {
-      throw new Error("Discord client user is not available.");
-    }
-
-    return actionService.execute(buildRetributeContext(interaction, parsed, definition, botUser));
-  }
-};
+export const retributeService = createRetributeService();
 
 interface ParsedRetributeCustomId {
   action: string;
@@ -113,6 +165,22 @@ function parseBase36Timestamp(value: string | undefined): Date | undefined {
 
 function isExpired(createdAt: Date, now: Date): boolean {
   return now.getTime() - createdAt.getTime() > RETRIBUTE_BUTTON_TTL_MS;
+}
+
+function isMatchingAvailableState(
+  state: RetributeButtonState | null,
+  parsed: ParsedRetributeCustomId,
+  now: Date
+): state is RetributeButtonState {
+  return Boolean(
+    state &&
+    state.guildId === parsed.guildId &&
+    state.action === parsed.action &&
+    state.originalAuthorId === parsed.originalActorUserId &&
+    state.originalTargetId === parsed.originalTargetUserId &&
+    state.usedAt === null &&
+    state.expiresAt.getTime() > now.getTime()
+  );
 }
 
 function buildRetributeContext(

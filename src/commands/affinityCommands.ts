@@ -14,10 +14,7 @@ export const affinityCommand: SlashCommandDefinition = {
     .setDescription("Mostra a afinidade entre voce e outro usuario.")
     .setDMPermission(false)
     .addUserOption((option) =>
-      option
-        .setName(USER_OPTION_NAME)
-        .setDescription("Usuario para consultar.")
-        .setRequired(true)
+      option.setName(USER_OPTION_NAME).setDescription("Usuario para consultar.").setRequired(true)
     ),
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guildId) {
@@ -28,6 +25,7 @@ export const affinityCommand: SlashCommandDefinition = {
       return;
     }
 
+    await interaction.deferReply({ ephemeral: true });
     const target = interaction.options.getUser(USER_OPTION_NAME, true);
     const summary = await affinityQueryService.getPairSummary(
       interaction.guildId,
@@ -35,7 +33,7 @@ export const affinityCommand: SlashCommandDefinition = {
       target.id
     );
 
-    await interaction.reply({
+    await interaction.editReply({
       embeds: [buildAffinitySummaryEmbed(interaction.user.id, target.id, summary)]
     });
   }
@@ -64,11 +62,12 @@ export const rankAffinityCommand: SlashCommandDefinition = {
       return;
     }
 
+    await interaction.deferReply();
     const ranking = await rankingService.getGuildPairRanking({
       guildId: interaction.guildId,
       page: interaction.options.getInteger(PAGE_OPTION_NAME) ?? 1
     });
 
-    await interaction.reply({ embeds: [buildAffinityRankingEmbed(ranking)] });
+    await interaction.editReply({ embeds: [buildAffinityRankingEmbed(ranking)] });
   }
 };

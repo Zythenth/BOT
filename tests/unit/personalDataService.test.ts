@@ -110,15 +110,13 @@ test("personalDataService exporta dados proprios sem expor metadados de GIF", as
 });
 
 test("personalDataService apaga dados e preserva preferencia minima de opt-out", async () => {
-  let upsertInput:
-    | {
-        userId: string;
-        locale: string;
-        allowRomance: boolean;
-        hideFromRankings: boolean;
-        optedOutOfAffinity: boolean;
-      }
-    | null = null;
+  let upsertInput: {
+    userId: string;
+    locale: string;
+    allowRomance: boolean;
+    hideFromRankings: boolean;
+    optedOutOfAffinity: boolean;
+  } | null = null;
 
   const service = createPersonalDataService({
     now: () => now,

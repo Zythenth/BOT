@@ -343,11 +343,9 @@ function createFakeProvider(options: {
 
         return {
           status: "ok",
-          gifs: gifsByTerm ?? (options.searchGifId
-            ? [
-                fakeGiphyGif(options.searchGifId, "Anime hug GIF")
-              ]
-            : [])
+          gifs:
+            gifsByTerm ??
+            (options.searchGifId ? [fakeGiphyGif(options.searchGifId, "Anime hug GIF")] : [])
         };
       },
       async getById(providerGifId) {
@@ -444,9 +442,6 @@ function createFakeStorage(options: {
           id,
           status: data.status ?? options.existingGif?.status ?? "approved"
         });
-      },
-      async incrementUsage() {
-        return undefined;
       }
     }
   };

@@ -7,11 +7,17 @@ export interface AdminPermissionResult {
 
 export const adminPermissionService = {
   canManageGifs(interaction: ChatInputCommandInteraction): AdminPermissionResult {
-    return canManageServerFeature(interaction, "Use comandos administrativos de GIF em um servidor.");
+    return canManageServerFeature(
+      interaction,
+      "Use comandos administrativos de GIF em um servidor."
+    );
   },
 
   canManagePhrases(interaction: ChatInputCommandInteraction): AdminPermissionResult {
-    return canManageServerFeature(interaction, "Use comandos administrativos de frases em um servidor.");
+    return canManageServerFeature(
+      interaction,
+      "Use comandos administrativos de frases em um servidor."
+    );
   },
 
   canManageConfig(interaction: ChatInputCommandInteraction): AdminPermissionResult {

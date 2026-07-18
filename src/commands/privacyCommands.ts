@@ -1,5 +1,6 @@
 import {
   AttachmentBuilder,
+  PermissionFlagsBits,
   SlashCommandBuilder,
   type ChatInputCommandInteraction
 } from "discord.js";
@@ -57,15 +58,13 @@ function createBlockRpCommand(): SlashCommandDefinition {
         return;
       }
 
+      await interaction.deferReply({ ephemeral: true });
       const target = interaction.options.getUser(USER_OPTION_NAME);
       const result = target
         ? await blockService.blockUser(guildId, interaction.user.id, target.id)
         : await blockService.blockAllRp(guildId, interaction.user.id);
 
-      await interaction.reply({
-        content: result.message,
-        ephemeral: true
-      });
+      await interaction.editReply({ content: result.message });
     }
   };
 }
@@ -91,15 +90,13 @@ function createUnblockRpCommand(): SlashCommandDefinition {
         return;
       }
 
+      await interaction.deferReply({ ephemeral: true });
       const target = interaction.options.getUser(USER_OPTION_NAME);
       const result = target
         ? await blockService.unblockUser(guildId, interaction.user.id, target.id)
         : await blockService.unblockAllRp(guildId, interaction.user.id);
 
-      await interaction.reply({
-        content: result.message,
-        ephemeral: true
-      });
+      await interaction.editReply({ content: result.message });
     }
   };
 }
@@ -137,6 +134,7 @@ function createBlockCategoryCommand(): SlashCommandDefinition {
         return;
       }
 
+      await interaction.deferReply({ ephemeral: true });
       const category = interaction.options.getString(
         CATEGORY_OPTION_NAME,
         true
@@ -149,10 +147,7 @@ function createBlockCategoryCommand(): SlashCommandDefinition {
         blocked
       });
 
-      await interaction.reply({
-        content: result.message,
-        ephemeral: true
-      });
+      await interaction.editReply({ content: result.message });
     }
   };
 }
@@ -184,6 +179,7 @@ function createPreferencesCommand(): SlashCommandDefinition {
         return;
       }
 
+      await interaction.deferReply({ ephemeral: true });
       const allowRomance = interaction.options.getBoolean(ALLOW_ROMANCE_OPTION_NAME);
       const hideFromRankings = interaction.options.getBoolean(HIDE_RANKING_OPTION_NAME);
       const preference =
@@ -196,10 +192,7 @@ function createPreferencesCommand(): SlashCommandDefinition {
             });
       const blockStatus = await blockService.getStatus(guildId, interaction.user.id);
 
-      await interaction.reply({
-        embeds: [buildPreferencesEmbed(preference, blockStatus)],
-        ephemeral: true
-      });
+      await interaction.editReply({ embeds: [buildPreferencesEmbed(preference, blockStatus)] });
     }
   };
 }
@@ -213,10 +206,10 @@ function createOptOutCommand(): SlashCommandDefinition {
       .setDescription("Sai do sistema de afinidade e ranking.")
       .setDMPermission(false),
     async execute(interaction) {
+      await interaction.deferReply({ ephemeral: true });
       await preferenceService.optOut(interaction.user.id);
-      await interaction.reply({
-        content: "Opt-out ativado. Voce nao pontuara afinidade nem aparecera em rankings.",
-        ephemeral: true
+      await interaction.editReply({
+        content: "Opt-out ativado. Voce nao pontuara afinidade nem aparecera em rankings."
       });
     }
   };
@@ -231,10 +224,10 @@ function createOptInCommand(): SlashCommandDefinition {
       .setDescription("Volta ao sistema de afinidade e ranking.")
       .setDMPermission(false),
     async execute(interaction) {
+      await interaction.deferReply({ ephemeral: true });
       await preferenceService.optIn(interaction.user.id);
-      await interaction.reply({
-        content: "Opt-in ativado. Voce voltou ao sistema de afinidade e ranking.",
-        ephemeral: true
+      await interaction.editReply({
+        content: "Opt-in ativado. Voce voltou ao sistema de afinidade e ranking."
       });
     }
   };
@@ -255,12 +248,10 @@ function createPersonalDataCommand(): SlashCommandDefinition {
         return;
       }
 
+      await interaction.deferReply({ ephemeral: true });
       const summary = await personalDataService.getSummary(interaction.user.id);
 
-      await interaction.reply({
-        embeds: [buildPersonalDataSummaryEmbed(summary)],
-        ephemeral: true
-      });
+      await interaction.editReply({ embeds: [buildPersonalDataSummaryEmbed(summary)] });
     }
   };
 }
@@ -280,16 +271,23 @@ function createExportDataCommand(): SlashCommandDefinition {
         return;
       }
 
-      const data = await personalDataService.exportUserData(interaction.user.id);
-      const attachment = new AttachmentBuilder(
-        Buffer.from(JSON.stringify(data, null, 2), "utf8"),
-        { name: "aurora-meus-dados.json" }
-      );
+      if (!interaction.appPermissions?.has(PermissionFlagsBits.AttachFiles)) {
+        await interaction.reply({
+          content: "Preciso da permissao Anexar arquivos neste canal para exportar seus dados.",
+          ephemeral: true
+        });
+        return;
+      }
 
-      await interaction.reply({
+      await interaction.deferReply({ ephemeral: true });
+      const data = await personalDataService.exportUserData(interaction.user.id);
+      const attachment = new AttachmentBuilder(Buffer.from(JSON.stringify(data, null, 2), "utf8"), {
+        name: "aurora-meus-dados.json"
+      });
+
+      await interaction.editReply({
         content: "Aqui esta sua exportacao privada de dados da Aurora.",
-        files: [attachment],
-        ephemeral: true
+        files: [attachment]
       });
     }
   };
@@ -316,10 +314,7 @@ function createEraseDataCommand(): SlashCommandDefinition {
         return;
       }
 
-      const confirmation = interaction.options.getString(
-        ERASE_CONFIRMATION_OPTION_NAME,
-        true
-      );
+      const confirmation = interaction.options.getString(ERASE_CONFIRMATION_OPTION_NAME, true);
 
       if (confirmation !== ERASE_CONFIRMATION_TEXT) {
         await interaction.reply({
@@ -329,12 +324,10 @@ function createEraseDataCommand(): SlashCommandDefinition {
         return;
       }
 
+      await interaction.deferReply({ ephemeral: true });
       const result = await personalDataService.eraseOwnData(interaction.user.id);
 
-      await interaction.reply({
-        embeds: [buildPersonalDataEraseEmbed(result)],
-        ephemeral: true
-      });
+      await interaction.editReply({ embeds: [buildPersonalDataEraseEmbed(result)] });
     }
   };
 }

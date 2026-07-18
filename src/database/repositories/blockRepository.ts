@@ -38,28 +38,19 @@ export const blockRepository = {
 
     if (input.blockedUserId) {
       and.push({
-        OR: [
-          { blockedUserId: input.blockedUserId },
-          { blockedUserId: null }
-        ]
+        OR: [{ blockedUserId: input.blockedUserId }, { blockedUserId: null }]
       });
     }
 
     if (input.category) {
       and.push({
-        OR: [
-          { category: input.category },
-          { category: null }
-        ]
+        OR: [{ category: input.category }, { category: null }]
       });
     }
 
     if (input.action) {
       and.push({
-        OR: [
-          { action: input.action },
-          { action: null }
-        ]
+        OR: [{ action: input.action }, { action: null }]
       });
     }
 

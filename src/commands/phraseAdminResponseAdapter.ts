@@ -1,9 +1,6 @@
 import { EmbedBuilder, type ColorResolvable } from "discord.js";
 import type { Phrase } from "@prisma/client";
-import type {
-  PhraseListResult,
-  PhraseModerationResult
-} from "../services";
+import type { PhraseListResult, PhraseModerationResult } from "../services";
 
 const SUCCESS_COLOR: ColorResolvable = 0x8bd3a7;
 const ERROR_COLOR: ColorResolvable = 0xe57373;
@@ -42,15 +39,14 @@ export function buildPhraseListEmbed(
   }
 
   return baseEmbed("Lista de frases", SUCCESS_COLOR)
-    .setDescription(`Base JSON: ${result.data.baseCount}. Customizadas: ${result.data.customCount}.`)
+    .setDescription(
+      `Base JSON: ${result.data.baseCount}. Customizadas: ${result.data.customCount}.`
+    )
     .addFields(formatPhraseFields(result.data));
 }
 
 function baseEmbed(title: string, color: ColorResolvable): EmbedBuilder {
-  return new EmbedBuilder()
-    .setColor(color)
-    .setTitle(title)
-    .setTimestamp(new Date());
+  return new EmbedBuilder().setColor(color).setTitle(title).setTimestamp(new Date());
 }
 
 function formatPhraseFields(result: PhraseListResult) {

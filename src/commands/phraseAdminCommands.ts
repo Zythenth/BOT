@@ -1,14 +1,12 @@
 import {
+  PermissionFlagsBits,
   SlashCommandBuilder,
   type ChatInputCommandInteraction,
   type SlashCommandStringOption
 } from "discord.js";
 import { adminPermissionService, phraseModerationService } from "../services";
 import type { ActionCategory, ActionName, SlashCommandDefinition } from "../types";
-import {
-  buildPhraseListEmbed,
-  buildPhraseMutationEmbed
-} from "./phraseAdminResponseAdapter";
+import { buildPhraseListEmbed, buildPhraseMutationEmbed } from "./phraseAdminResponseAdapter";
 
 const PHRASE_ID_OPTION = "id";
 const ACTION_OPTION = "action";
@@ -22,13 +20,19 @@ export const phraseAdminSlashCommands: SlashCommandDefinition[] = [
   createPhraseListCommand()
 ];
 
+function createAdminSlashCommandBuilder(): SlashCommandBuilder {
+  return new SlashCommandBuilder().setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
+}
+
 function createPhraseAddCommand(): SlashCommandDefinition {
-  const data = new SlashCommandBuilder()
+  const data = createAdminSlashCommandBuilder()
     .setName("fraseadd")
     .setDescription("Adiciona uma frase customizada para uma action.")
     .setDMPermission(false)
     .addStringOption((option) =>
-      addActionChoices(option.setName(ACTION_OPTION).setDescription("Action da frase.").setRequired(true))
+      addActionChoices(
+        option.setName(ACTION_OPTION).setDescription("Action da frase.").setRequired(true)
+      )
     )
     .addStringOption((option) =>
       option
@@ -73,7 +77,7 @@ function createPhraseAddCommand(): SlashCommandDefinition {
 }
 
 function createPhraseRemoveCommand(): SlashCommandDefinition {
-  const data = new SlashCommandBuilder()
+  const data = createAdminSlashCommandBuilder()
     .setName("fraseremove")
     .setDescription("Remove uma frase customizada da rotacao.")
     .setDMPermission(false)
@@ -106,12 +110,14 @@ function createPhraseRemoveCommand(): SlashCommandDefinition {
 }
 
 function createPhraseListCommand(): SlashCommandDefinition {
-  const data = new SlashCommandBuilder()
+  const data = createAdminSlashCommandBuilder()
     .setName("fraselist")
     .setDescription("Lista frases base e customizadas.")
     .setDMPermission(false)
     .addStringOption((option) =>
-      addActionChoices(option.setName(ACTION_OPTION).setDescription("Filtrar por action.").setRequired(false))
+      addActionChoices(
+        option.setName(ACTION_OPTION).setDescription("Filtrar por action.").setRequired(false)
+      )
     )
     .addStringOption((option) =>
       addCategoryChoices(
@@ -167,7 +173,10 @@ async function requirePhraseAdmin(interaction: ChatInputCommandInteraction): Pro
   return false;
 }
 
-function readAction(interaction: ChatInputCommandInteraction, required: boolean): ActionName | undefined {
+function readAction(
+  interaction: ChatInputCommandInteraction,
+  required: boolean
+): ActionName | undefined {
   const value = required
     ? interaction.options.getString(ACTION_OPTION, true)
     : interaction.options.getString(ACTION_OPTION);

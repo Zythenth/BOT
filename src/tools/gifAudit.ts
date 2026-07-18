@@ -348,24 +348,23 @@ async function runApplyReviewMode(args: AuditArgs): Promise<void> {
     }
   }
 
-  console.log(JSON.stringify({
-    status: "review_applied",
-    approvedOrUpdated: changed.length,
-    blocked: badGifIds.length,
-    inconclusive: inconclusive.length,
-    badGifIds,
-    inconclusiveSampleIds: inconclusive
-  }));
+  console.log(
+    JSON.stringify({
+      status: "review_applied",
+      approvedOrUpdated: changed.length,
+      blocked: badGifIds.length,
+      inconclusive: inconclusive.length,
+      badGifIds,
+      inconclusiveSampleIds: inconclusive
+    })
+  );
 }
 
 function loadAuditEnv(): void {
   const configuredPath = process.env.DOTENV_CONFIG_PATH;
-  const auroraEnvPath = path.join(DATA_DIR, "aurora.env");
 
   if (configuredPath) {
     dotenv.config({ path: configuredPath, override: true });
-  } else if (existsSync(auroraEnvPath)) {
-    dotenv.config({ path: auroraEnvPath, override: true });
   } else {
     dotenv.config({ override: true });
   }
@@ -581,7 +580,9 @@ function evaluateGif(
 } {
   const searchableText = getSearchableGifText(gif);
 
-  if (BLOCKED_RESULT_KEYWORDS.some((keyword) => includesNormalizedKeyword(searchableText, keyword))) {
+  if (
+    BLOCKED_RESULT_KEYWORDS.some((keyword) => includesNormalizedKeyword(searchableText, keyword))
+  ) {
     return {
       gif,
       metadataStatus: "rejected",
@@ -597,7 +598,9 @@ function evaluateGif(
     };
   }
 
-  if (!ANIME_RESULT_KEYWORDS.some((keyword) => includesNormalizedKeyword(searchableText, keyword))) {
+  if (
+    !ANIME_RESULT_KEYWORDS.some((keyword) => includesNormalizedKeyword(searchableText, keyword))
+  ) {
     return {
       gif,
       metadataStatus: "rejected",
@@ -634,24 +637,27 @@ function isAcceptableClassification(
 }
 
 function isClearlyBadClassification(classification: VisualClassification): boolean {
-  return [
-    "ai_suspeito",
-    "nao_anime",
-    "acao_errada",
-    "conteudo_inadequado"
-  ].includes(classification);
+  return ["ai_suspeito", "nao_anime", "acao_errada", "conteudo_inadequado"].includes(
+    classification
+  );
 }
 
 function writeManifest(manifest: AuditManifest, manifestPath?: string): void {
-  const outputPath = path.resolve(manifestPath ?? path.join(DATA_DIR, `gif-audit-manifest-${manifest.runId}.json`));
+  const outputPath = path.resolve(
+    manifestPath ?? path.join(DATA_DIR, `gif-audit-manifest-${manifest.runId}.json`)
+  );
   writeFileSync(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 }
 
 function appendAuditReport(record: Record<string, unknown>): void {
-  appendFileSync(REPORT_PATH, `${JSON.stringify({
-    auditedAt: new Date().toISOString(),
-    ...record
-  })}\n`, "utf8");
+  appendFileSync(
+    REPORT_PATH,
+    `${JSON.stringify({
+      auditedAt: new Date().toISOString(),
+      ...record
+    })}\n`,
+    "utf8"
+  );
 }
 
 function publicSummary(manifest: AuditManifest, status: string): Record<string, unknown> {
@@ -689,9 +695,17 @@ async function waitForExternalCallSlot(): Promise<void> {
 }
 
 function markExternalCall(): void {
-  writeFileSync(STATE_PATH, `${JSON.stringify({
-    lastExternalCallAt: new Date().toISOString()
-  }, null, 2)}\n`, "utf8");
+  writeFileSync(
+    STATE_PATH,
+    `${JSON.stringify(
+      {
+        lastExternalCallAt: new Date().toISOString()
+      },
+      null,
+      2
+    )}\n`,
+    "utf8"
+  );
 }
 
 function readLastExternalCallAt(): Date | undefined {
@@ -721,13 +735,11 @@ function sleep(ms: number): Promise<void> {
 }
 
 function getSearchableGifText(gif: GiphyGif): string {
-  return normalizeText([
-    gif.title,
-    gif.pageUrl,
-    gif.mediaUrl
-  ]
-    .filter((value): value is string => Boolean(value))
-    .join(" "));
+  return normalizeText(
+    [gif.title, gif.pageUrl, gif.mediaUrl]
+      .filter((value): value is string => Boolean(value))
+      .join(" ")
+  );
 }
 
 function includesNormalizedKeyword(searchableText: string, keyword: string): boolean {
@@ -735,11 +747,7 @@ function includesNormalizedKeyword(searchableText: string, keyword: string): boo
 }
 
 function normalizeText(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[-_]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return value.toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function hasAny(value: string, keywords: readonly string[]): boolean {
@@ -808,64 +816,13 @@ const BLOCKED_RESULT_KEYWORDS = [
 ];
 
 const ACTION_RESULT_KEYWORDS: Record<string, readonly string[]> = {
-  kiss: [
-    "kiss",
-    "kissing",
-    "couple kiss",
-    "romantic kiss",
-    "selinho"
-  ],
-  beijotesta: [
-    "forehead kiss",
-    "kiss forehead",
-    "kiss on forehead",
-    "forehead peck",
-    "forehead"
-  ],
-  beijobochecha: [
-    "cheek kiss",
-    "kiss cheek",
-    "kiss on cheek",
-    "cheek peck",
-    "cheek"
-  ],
-  hug: [
-    "hug",
-    "hugs",
-    "hugging",
-    "embrace",
-    "cuddle"
-  ],
-  cafune: [
-    "headpat",
-    "head pat",
-    "pat",
-    "hair pat"
-  ],
-  consolar: [
-    "comfort",
-    "comforting",
-    "console",
-    "consoling",
-    "sad hug",
-    "crying hug"
-  ],
-  proteger: [
-    "protect",
-    "protecting",
-    "protective",
-    "saving",
-    "shield"
-  ],
-  morder: [
-    "bite",
-    "biting",
-    "nibble",
-    "chomp"
-  ],
-  cutucar: [
-    "poke",
-    "poking",
-    "cheek poke"
-  ]
+  kiss: ["kiss", "kissing", "couple kiss", "romantic kiss", "selinho"],
+  beijotesta: ["forehead kiss", "kiss forehead", "kiss on forehead", "forehead peck", "forehead"],
+  beijobochecha: ["cheek kiss", "kiss cheek", "kiss on cheek", "cheek peck", "cheek"],
+  hug: ["hug", "hugs", "hugging", "embrace", "cuddle"],
+  cafune: ["headpat", "head pat", "pat", "hair pat"],
+  consolar: ["comfort", "comforting", "console", "consoling", "sad hug", "crying hug"],
+  proteger: ["protect", "protecting", "protective", "saving", "shield"],
+  morder: ["bite", "biting", "nibble", "chomp"],
+  cutucar: ["poke", "poking", "cheek poke"]
 };

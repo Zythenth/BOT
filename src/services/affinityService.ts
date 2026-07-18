@@ -9,13 +9,8 @@ import {
   getAffinityMilestone,
   getAffinityPointsForCategory
 } from "../config";
-import { affinityRepository, interactionRepository } from "../database";
-import type {
-  ActionAffinityResult,
-  ActionCategory,
-  ActionName,
-  ActionSource
-} from "../types";
+import { affinityRepository, interactionRepository, type RepositoryClient } from "../database";
+import type { ActionAffinityResult, ActionCategory, ActionName, ActionSource } from "../types";
 import { guildConfigService } from "./guildConfigService";
 import { preferenceService } from "./preferenceService";
 
@@ -40,9 +35,12 @@ export interface AffinityServiceConfig {
 }
 
 export interface AffinityService {
-  applyAction(input: ApplyAffinityInput): Promise<ActionAffinityResult>;
+  applyAction(input: ApplyAffinityInput, db?: RepositoryClient): Promise<ActionAffinityResult>;
   getMilestone(points: number): ReturnType<typeof getAffinityMilestone>;
-  normalizePair(userOneId: string, userTwoId: string): ReturnType<typeof affinityRepository.normalizePair>;
+  normalizePair(
+    userOneId: string,
+    userTwoId: string
+  ): ReturnType<typeof affinityRepository.normalizePair>;
 }
 
 export interface AffinityPairLike {
@@ -51,44 +49,70 @@ export interface AffinityPairLike {
 }
 
 export interface AffinityRepositoryLike {
-  normalizePair(userOneId: string, userTwoId: string): ReturnType<typeof affinityRepository.normalizePair>;
-  getOrCreatePair(guildId: string, userOneId: string, userTwoId: string): Promise<AffinityPairLike>;
-  recordAction(input: {
-    guildId: string;
-    userOneId: string;
-    userTwoId: string;
-    pointsAwarded: number;
-    interactedAt?: Date;
-  }): Promise<AffinityPairLike>;
+  normalizePair(
+    userOneId: string,
+    userTwoId: string
+  ): ReturnType<typeof affinityRepository.normalizePair>;
+  getOrCreatePair(
+    guildId: string,
+    userOneId: string,
+    userTwoId: string,
+    db?: RepositoryClient
+  ): Promise<AffinityPairLike>;
+  recordAction(
+    input: {
+      guildId: string;
+      userOneId: string;
+      userTwoId: string;
+      pointsAwarded: number;
+      interactedAt?: Date;
+    },
+    db?: RepositoryClient
+  ): Promise<AffinityPairLike>;
 }
 
 export interface AffinityInteractionRepositoryLike {
-  findLatestScoredForPairAction(filters: {
-    guildId: string;
-    affinityPairId: string;
-    action: string;
-    since?: Date;
-  }): Promise<{ createdAt: Date } | null>;
-  findLatestScoredForUser(filters: {
-    guildId: string;
-    userId: string;
-    since?: Date;
-  }): Promise<{ createdAt: Date } | null>;
-  sumScoredPointsForPair(filters: {
-    guildId: string;
-    affinityPairId: string;
-    since?: Date;
-  }): Promise<number>;
-  sumScoredPointsForUser(filters: {
-    guildId: string;
-    userId: string;
-    since?: Date;
-  }): Promise<number>;
-  countScoredInteractionsForUser(filters: {
-    guildId: string;
-    userId: string;
-    since?: Date;
-  }): Promise<number>;
+  findLatestScoredForPairAction(
+    filters: {
+      guildId: string;
+      affinityPairId: string;
+      action: string;
+      since?: Date;
+    },
+    db?: RepositoryClient
+  ): Promise<{ createdAt: Date } | null>;
+  findLatestScoredForUser(
+    filters: {
+      guildId: string;
+      userId: string;
+      since?: Date;
+    },
+    db?: RepositoryClient
+  ): Promise<{ createdAt: Date } | null>;
+  sumScoredPointsForPair(
+    filters: {
+      guildId: string;
+      affinityPairId: string;
+      since?: Date;
+    },
+    db?: RepositoryClient
+  ): Promise<number>;
+  sumScoredPointsForUser(
+    filters: {
+      guildId: string;
+      userId: string;
+      since?: Date;
+    },
+    db?: RepositoryClient
+  ): Promise<number>;
+  countScoredInteractionsForUser(
+    filters: {
+      guildId: string;
+      userId: string;
+      since?: Date;
+    },
+    db?: RepositoryClient
+  ): Promise<number>;
 }
 
 export interface AffinityPreferenceServiceLike {
@@ -131,7 +155,7 @@ export function createAffinityService(
   dependencies: AffinityServiceDependencies = defaultAffinityServiceDependencies
 ): AffinityService {
   return {
-    async applyAction(input) {
+    async applyAction(input, db) {
       const basePoints = getAffinityPointsForCategory(input.category);
 
       if (basePoints <= 0) {
@@ -163,18 +187,22 @@ export function createAffinityService(
       const pair = await dependencies.affinityRepository.getOrCreatePair(
         input.guildId,
         input.actorUserId,
-        input.targetUserId
+        input.targetUserId,
+        db
       );
       const previousMilestone = getAffinityMilestone(pair.points);
 
       if (pair.points >= effectiveConfig.maxPoints) {
-        await dependencies.affinityRepository.recordAction({
-          guildId: input.guildId,
-          userOneId: input.actorUserId,
-          userTwoId: input.targetUserId,
-          pointsAwarded: 0,
-          interactedAt: now
-        });
+        await dependencies.affinityRepository.recordAction(
+          {
+            guildId: input.guildId,
+            userOneId: input.actorUserId,
+            userTwoId: input.targetUserId,
+            pointsAwarded: 0,
+            interactedAt: now
+          },
+          db
+        );
 
         return {
           pointsAwarded: 0,
@@ -194,18 +222,22 @@ export function createAffinityService(
             pair.id,
             now,
             effectiveConfig,
-            dependencies.interactionRepository
+            dependencies.interactionRepository,
+            db
           )
         : null;
 
       if (cooldownResult) {
-        await dependencies.affinityRepository.recordAction({
-          guildId: input.guildId,
-          userOneId: input.actorUserId,
-          userTwoId: input.targetUserId,
-          pointsAwarded: 0,
-          interactedAt: now
-        });
+        await dependencies.affinityRepository.recordAction(
+          {
+            guildId: input.guildId,
+            userOneId: input.actorUserId,
+            userTwoId: input.targetUserId,
+            pointsAwarded: 0,
+            interactedAt: now
+          },
+          db
+        );
 
         return {
           pointsAwarded: 0,
@@ -224,20 +256,24 @@ export function createAffinityService(
         pair.id,
         now,
         effectiveConfig,
-        dependencies.interactionRepository
+        dependencies.interactionRepository,
+        db
       );
       const maxRemaining = Math.max(0, effectiveConfig.maxPoints - pair.points);
       const pointsAwarded = Math.max(
         0,
         Math.min(basePoints, dailyAllowance.remainingPoints, maxRemaining)
       );
-      const updatedPair = await dependencies.affinityRepository.recordAction({
-        guildId: input.guildId,
-        userOneId: input.actorUserId,
-        userTwoId: input.targetUserId,
-        pointsAwarded,
-        interactedAt: now
-      });
+      const updatedPair = await dependencies.affinityRepository.recordAction(
+        {
+          guildId: input.guildId,
+          userOneId: input.actorUserId,
+          userTwoId: input.targetUserId,
+          pointsAwarded,
+          interactedAt: now
+        },
+        db
+      );
       const milestone = getAffinityMilestone(updatedPair.points);
 
       return {
@@ -250,11 +286,8 @@ export function createAffinityService(
         milestone,
         previousMilestone,
         milestoneReached: milestone.key !== previousMilestone.key,
-        scoreReason: pointsAwarded > 0
-          ? "awarded"
-          : dailyAllowance.limitReached
-            ? "daily_limit"
-            : "max_points"
+        scoreReason:
+          pointsAwarded > 0 ? "awarded" : dailyAllowance.limitReached ? "daily_limit" : "max_points"
       };
     },
 
@@ -275,38 +308,42 @@ async function checkCooldowns(
   affinityPairId: string,
   now: Date,
   config: AffinityServiceConfig,
-  repository: AffinityInteractionRepositoryLike
+  repository: AffinityInteractionRepositoryLike,
+  db?: RepositoryClient
 ): Promise<Date | null> {
   const pairCooldownSince = new Date(now.getTime() - config.pairActionCooldownMs);
   const userCooldownSince = new Date(now.getTime() - config.userCooldownMs);
   const [pairAction, actorGlobal, targetGlobal] = await Promise.all([
-    repository.findLatestScoredForPairAction({
-      guildId: input.guildId,
-      affinityPairId,
-      action: input.action,
-      since: pairCooldownSince
-    }),
-    repository.findLatestScoredForUser({
-      guildId: input.guildId,
-      userId: input.actorUserId,
-      since: userCooldownSince
-    }),
-    repository.findLatestScoredForUser({
-      guildId: input.guildId,
-      userId: input.targetUserId,
-      since: userCooldownSince
-    })
+    repository.findLatestScoredForPairAction(
+      {
+        guildId: input.guildId,
+        affinityPairId,
+        action: input.action,
+        since: pairCooldownSince
+      },
+      db
+    ),
+    repository.findLatestScoredForUser(
+      {
+        guildId: input.guildId,
+        userId: input.actorUserId,
+        since: userCooldownSince
+      },
+      db
+    ),
+    repository.findLatestScoredForUser(
+      {
+        guildId: input.guildId,
+        userId: input.targetUserId,
+        since: userCooldownSince
+      },
+      db
+    )
   ]);
   const cooldownUntilValues = [
-    pairAction
-      ? addMilliseconds(pairAction.createdAt, config.pairActionCooldownMs)
-      : null,
-    actorGlobal
-      ? addMilliseconds(actorGlobal.createdAt, config.userCooldownMs)
-      : null,
-    targetGlobal
-      ? addMilliseconds(targetGlobal.createdAt, config.userCooldownMs)
-      : null
+    pairAction ? addMilliseconds(pairAction.createdAt, config.pairActionCooldownMs) : null,
+    actorGlobal ? addMilliseconds(actorGlobal.createdAt, config.userCooldownMs) : null,
+    targetGlobal ? addMilliseconds(targetGlobal.createdAt, config.userCooldownMs) : null
   ].filter((value): value is Date => Boolean(value));
 
   if (cooldownUntilValues.length === 0) {
@@ -323,7 +360,8 @@ async function calculateDailyAllowance(
   affinityPairId: string,
   now: Date,
   config: AffinityServiceConfig,
-  repository: AffinityInteractionRepositoryLike
+  repository: AffinityInteractionRepositoryLike,
+  db?: RepositoryClient
 ): Promise<{ remainingPoints: number; limitReached: boolean }> {
   const dayStart = getStartOfDayInTimeZone(now, config.timeZone);
   const [
@@ -333,31 +371,46 @@ async function calculateDailyAllowance(
     actorScoredInteractions,
     targetScoredInteractions
   ] = await Promise.all([
-    repository.sumScoredPointsForPair({
-      guildId: input.guildId,
-      affinityPairId,
-      since: dayStart
-    }),
-    repository.sumScoredPointsForUser({
-      guildId: input.guildId,
-      userId: input.actorUserId,
-      since: dayStart
-    }),
-    repository.sumScoredPointsForUser({
-      guildId: input.guildId,
-      userId: input.targetUserId,
-      since: dayStart
-    }),
-    repository.countScoredInteractionsForUser({
-      guildId: input.guildId,
-      userId: input.actorUserId,
-      since: dayStart
-    }),
-    repository.countScoredInteractionsForUser({
-      guildId: input.guildId,
-      userId: input.targetUserId,
-      since: dayStart
-    })
+    repository.sumScoredPointsForPair(
+      {
+        guildId: input.guildId,
+        affinityPairId,
+        since: dayStart
+      },
+      db
+    ),
+    repository.sumScoredPointsForUser(
+      {
+        guildId: input.guildId,
+        userId: input.actorUserId,
+        since: dayStart
+      },
+      db
+    ),
+    repository.sumScoredPointsForUser(
+      {
+        guildId: input.guildId,
+        userId: input.targetUserId,
+        since: dayStart
+      },
+      db
+    ),
+    repository.countScoredInteractionsForUser(
+      {
+        guildId: input.guildId,
+        userId: input.actorUserId,
+        since: dayStart
+      },
+      db
+    ),
+    repository.countScoredInteractionsForUser(
+      {
+        guildId: input.guildId,
+        userId: input.targetUserId,
+        since: dayStart
+      },
+      db
+    )
   ]);
   const remainingPairPoints = config.pairDailyPoints - pairPointsToday;
   const remainingActorPoints = config.userDailyPoints - actorPointsToday;
@@ -366,8 +419,7 @@ async function calculateDailyAllowance(
     actorScoredInteractions >= config.userDailyScoredInteractions;
   const targetInteractionLimitReached =
     targetScoredInteractions >= config.userDailyScoredInteractions;
-  const interactionLimitReached =
-    actorInteractionLimitReached || targetInteractionLimitReached;
+  const interactionLimitReached = actorInteractionLimitReached || targetInteractionLimitReached;
   const remainingPoints = Math.max(
     0,
     interactionLimitReached

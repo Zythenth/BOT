@@ -33,10 +33,7 @@ export const phraseRepository = {
 
     return db.phrase.findMany({
       where,
-      orderBy: [
-        { isDefault: "desc" },
-        { createdAt: "asc" }
-      ],
+      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
       take: filters.take ?? DEFAULT_LIST_TAKE,
       skip: filters.skip
     });

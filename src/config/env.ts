@@ -23,10 +23,6 @@ export interface AppConfig {
     requestsPerHour: number;
     rating: GiphyRating;
     lang: string;
-    dbMinRatio: number;
-    dbMaxRatio: number;
-    externalMinRatio: number;
-    externalMaxRatio: number;
     allowNsfw: boolean;
     allowUncategorized: boolean;
   };
@@ -35,7 +31,11 @@ export interface AppConfig {
 export function loadConfig(): AppConfig {
   loadDotEnv();
 
-  const reader = createEnvReader(process.env);
+  return parseConfig(process.env);
+}
+
+export function parseConfig(source: NodeJS.ProcessEnv): AppConfig {
+  const reader = createEnvReader(source);
   const config: AppConfig = {
     environment: reader.enumValue("NODE_ENV", ["development", "test", "production"], "development"),
     discord: {
@@ -45,7 +45,7 @@ export function loadConfig(): AppConfig {
       allowedGuildIds: reader.stringList("DISCORD_ALLOWED_GUILD_IDS")
     },
     databaseUrl: reader.requiredString("DATABASE_URL"),
-    defaultPrefix: reader.string("DEFAULT_PREFIX", DEFAULT_PREFIX),
+    defaultPrefix: DEFAULT_PREFIX,
     actionCooldownSeconds: reader.integer(
       "ACTION_COOLDOWN_SECONDS",
       DEFAULT_ACTION_COOLDOWN_SECONDS,
@@ -57,16 +57,11 @@ export function loadConfig(): AppConfig {
       requestsPerHour: reader.integer("GIPHY_REQUESTS_PER_HOUR", 100, { min: 1 }),
       rating: reader.enumValue("GIPHY_RATING", ["g", "pg", "pg-13", "r"], "pg"),
       lang: reader.string("GIPHY_LANG", "pt"),
-      dbMinRatio: reader.number("GIF_DB_MIN_RATIO", 0.65, { min: 0, max: 1 }),
-      dbMaxRatio: reader.number("GIF_DB_MAX_RATIO", 0.85, { min: 0, max: 1 }),
-      externalMinRatio: reader.number("GIF_GIPHY_MIN_RATIO", 0.15, { min: 0, max: 1 }),
-      externalMaxRatio: reader.number("GIF_GIPHY_MAX_RATIO", 0.35, { min: 0, max: 1 }),
       allowNsfw: reader.boolean("ALLOW_NSFW", false),
       allowUncategorized: reader.boolean("ALLOW_UNCATEGORIZED_GIFS", true)
     }
   };
 
-  validateConfigRelationships(config, reader.errors);
   reader.throwIfInvalid();
 
   return config;
@@ -99,16 +94,6 @@ function loadDotEnv(): void {
   }
 
   dotenv.config();
-}
-
-function validateConfigRelationships(config: AppConfig, errors: string[]): void {
-  if (config.gifs.dbMinRatio > config.gifs.dbMaxRatio) {
-    errors.push("GIF_DB_MIN_RATIO cannot be greater than GIF_DB_MAX_RATIO.");
-  }
-
-  if (config.gifs.externalMinRatio > config.gifs.externalMaxRatio) {
-    errors.push("GIF_GIPHY_MIN_RATIO cannot be greater than GIF_GIPHY_MAX_RATIO.");
-  }
 }
 
 function createEnvReader(source: NodeJS.ProcessEnv) {

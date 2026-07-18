@@ -1,6 +1,10 @@
+import { RETRIBUTE_BUTTON_TTL_MS } from "../config";
 import {
+  buttonInteractionStateRepository,
+  gifRepository,
   guildRepository,
-  interactionRepository
+  interactionRepository,
+  prisma
 } from "../database";
 import type {
   ActionAffinityResult,
@@ -11,6 +15,7 @@ import type {
 } from "../types";
 import {
   buildDefaultActionPayload,
+  buildRetributeCustomId,
   fallbackActionPhrase,
   type RequiredActionPayloadContext
 } from "./actionPayloadBuilder";
@@ -29,17 +34,11 @@ export interface ActionServiceDependencies {
   validateCooldown(context: RequiredActionPayloadContext): Promise<ActionResult | null>;
   selectPhrase(context: RequiredActionPayloadContext): Promise<ActionPhraseSelection>;
   selectGif(context: RequiredActionPayloadContext): Promise<ActionGifSelection | undefined>;
-  calculateAffinity(
+  persistAction(
     context: RequiredActionPayloadContext,
     phrase: ActionPhraseSelection,
     gif: ActionGifSelection | undefined
   ): Promise<ActionAffinityResult>;
-  saveHistory(
-    context: RequiredActionPayloadContext,
-    phrase: ActionPhraseSelection,
-    gif: ActionGifSelection | undefined,
-    affinity: ActionAffinityResult
-  ): Promise<void>;
 }
 
 export interface ActionService {
@@ -79,10 +78,8 @@ export function createActionService(
 
       const phrase = await dependencies.selectPhrase(preparedContext);
       const gif = await dependencies.selectGif(preparedContext);
-      const affinity = await dependencies.calculateAffinity(preparedContext, phrase, gif);
+      const affinity = await dependencies.persistAction(preparedContext, phrase, gif);
       const payload = buildDefaultActionPayload(preparedContext, phrase, gif, affinity);
-
-      await dependencies.saveHistory(preparedContext, phrase, gif, affinity);
 
       return {
         ok: true,
@@ -127,7 +124,10 @@ const defaultActionServiceDependencies: ActionServiceDependencies = {
   async validatePermissions(context) {
     const config = await getContextConfig(context);
 
-    if (config.allowedChannelIds.length > 0 && !config.allowedChannelIds.includes(context.channelId ?? "")) {
+    if (
+      config.allowedChannelIds.length > 0 &&
+      !config.allowedChannelIds.includes(context.channelId ?? "")
+    ) {
       return failAction("channel_not_allowed", "Este canal nao esta liberado para acoes RP.");
     }
 
@@ -175,43 +175,61 @@ const defaultActionServiceDependencies: ActionServiceDependencies = {
     });
   },
 
-  async calculateAffinity(context) {
+  async persistAction(context, _phrase, gif) {
     const config = await getContextConfig(context);
 
-    if (!config.affinityEnabled) {
-      return {
-        pointsAwarded: 0,
-        scoreReason: "not_pointable"
-      };
-    }
+    return prisma.$transaction(async (db) => {
+      const affinity = config.affinityEnabled
+        ? await affinityService.applyAction(
+            {
+              guildId: context.guild.id,
+              actorUserId: context.actor.id,
+              targetUserId: context.target.id,
+              action: context.action,
+              category: context.category,
+              source: context.source,
+              occurredAt: context.now
+            },
+            db
+          )
+        : {
+            pointsAwarded: 0,
+            scoreReason: "not_pointable" as const
+          };
 
-    return affinityService.applyAction({
-      guildId: context.guild.id,
-      actorUserId: context.actor.id,
-      targetUserId: context.target.id,
-      action: context.action,
-      category: context.category,
-      source: context.source,
-      occurredAt: context.now
-    });
-  },
+      if (gif?.id) {
+        await gifRepository.incrementUsage(gif.id, context.now, db);
+      }
 
-  async saveHistory(context, _phrase, gif, affinity) {
-    if (gif?.id) {
-      await gifService.markGifUsed(gif.id, context.now);
-    }
+      await buttonInteractionStateRepository.upsert(
+        {
+          guildId: context.guild.id,
+          customId: buildRetributeCustomId(context),
+          action: context.action,
+          originalAuthorId: context.actor.id,
+          originalTargetId: context.target.id,
+          expiresAt: new Date(context.now.getTime() + RETRIBUTE_BUTTON_TTL_MS)
+        },
+        db
+      );
 
-    await interactionRepository.create({
-      guildId: context.guild.id,
-      actorUserId: context.actor.id,
-      targetUserId: context.target.id,
-      action: context.action,
-      category: context.category,
-      source: context.source,
-      pointsAwarded: affinity.pointsAwarded,
-      affinityPairId: affinity.affinityPairId,
-      gifId: gif?.id,
-      createdAt: context.now
+      await interactionRepository.create(
+        {
+          guildId: context.guild.id,
+          actorUserId: context.actor.id,
+          targetUserId: context.target.id,
+          action: context.action,
+          category: context.category,
+          source: context.source,
+          pointsAwarded: affinity.pointsAwarded,
+          affinityPairId: affinity.affinityPairId,
+          gifId: gif?.id,
+          createdAt: context.now
+        },
+        db
+      );
+
+      return affinity;
     });
   }
 };
