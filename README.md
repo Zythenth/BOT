@@ -2,7 +2,13 @@
 
 Aurora é um bot para Discord que oferece ações leves de roleplay entre membros de um servidor, respostas com frases e GIFs, afinidade por pares, controles de privacidade e ferramentas de moderação do conteúdo usado pelo bot.
 
-O projeto está em versão inicial (`0.1.0`), mas possui código executável, migrations versionadas e testes automatizados. Ele não inclui credenciais, banco de dados ou mídia privada do autor. O documento em `docs/` é um registro histórico de design e pode conter decisões planejadas; este README e o código são a referência do que está implementado.
+## Problema resolvido
+
+Comunidades do Discord costumam depender de vários bots ou de processos manuais para criar interações de roleplay, acompanhar afinidade e moderar o conteúdo dessas experiências. O Aurora reúne esses fluxos em um único bot configurável, com persistência, consentimento, privacidade e ferramentas administrativas por servidor.
+
+## Status atual
+
+O projeto está em versão inicial funcional (`0.1.0`), com código executável, migrations versionadas, testes automatizados, Docker e verificações de qualidade. Ele não inclui credenciais, banco de dados ou mídia privada do autor. O documento em `docs/` é um registro histórico de design e pode conter decisões planejadas; este README e o código são a referência do que está implementado.
 
 ## Funcionalidades atuais
 
